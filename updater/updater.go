@@ -55,7 +55,7 @@ func Update(ID int, UserName string, FirstName string, LastName string) {
 	log.Printf("Updater: UserID %d found with %d messages", ID, count)
 
 	// Insert section
-
+	log.Printf("Updater: Operation flag is %s", operation)
 	// Begin section
 	tx, err := db.Begin()
 	if err != nil {
@@ -64,6 +64,7 @@ func Update(ID int, UserName string, FirstName string, LastName string) {
 
 	var sqlQuery string
 	// Prepare section
+
 	if operation == "insert" {
 
 		sqlQuery = "insert into num_messages (userid, count) values (?, ?)"
@@ -85,7 +86,7 @@ func Update(ID int, UserName string, FirstName string, LastName string) {
 	}
 	defer smth.Close()
 	// Exec section
-	log.Printf("Updater: SQL Insert %s", sqlQuery)
+
 	count++
 	log.Printf("Updater: UserID: %d count: %d", ID, count)
 	if operation == "insert" {

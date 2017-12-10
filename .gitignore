@@ -8,3 +8,6 @@ init_db\.script
 settings\.ini
 
 goBot
+
+empty.db
+

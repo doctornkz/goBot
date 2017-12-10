@@ -24,7 +24,7 @@ func main() {
 		log.Panic(err)
 	}
 
-	bot.Debug = false
+	bot.Debug = true
 
 	log.Printf("Bot poller: Authorized on account %s", bot.Self.UserName)
 
@@ -33,16 +33,25 @@ func main() {
 
 	updates, err := bot.GetUpdatesChan(u)
 	for {
+		log.Println("Bot poller: Pre-update section")
 		select {
 		case update := <-updates:
+			if update.Message == nil {
+				continue
+			}
+			log.Println("Bot poller: ID section")
 			ID := update.Message.From.ID
+			log.Println("Bot poller: UserName section")
 			UserName := update.Message.From.UserName
+			log.Println("Bot poller: FirstName section")
 			FirstName := update.Message.From.FirstName
+			log.Println("Bot poller: LastName section")
 			LastName := update.Message.From.LastName
-
+			log.Println("Bot poller: ChatID section")
 			ChatID := update.Message.Chat.ID
+			log.Println("Bot poller: Text sections")
 			Text := update.Message.Text
-
+			log.Printf("Bot poller: ID: %d UserName: %s FirstName: %s LastName: %s", ID, UserName, FirstName, LastName)
 			if update.Message.IsCommand() {
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "")
 				switch update.Message.Command() {
