@@ -116,7 +116,13 @@ func Update(ID int, UserName string, FirstName string, LastName string) {
 func UserUpdate(ID int, UserName string, FirstName string, LastName string) {
 	// Open DB
 	//sqlite3.ErrCantOpen
-	db, err := sql.Open("sqlite3", "./exyandex.db")
+	conf, err := goini.Load("./settings.ini")
+	if err != nil {
+		panic(err)
+	}
+
+	sqliteDB := conf.Str("main", "SQLITE_DB")
+	db, err := sql.Open("sqlite3", sqliteDB)
 	if err != nil {
 		log.Fatal(err)
 		// TODO: Input "Create DB?"
