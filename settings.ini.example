@@ -1,0 +1,4 @@
+[main]
+ApiKey = 
+ChatRoomID = 
+SQLITE_DB = ./empty.db
