@@ -48,20 +48,25 @@ func init() {
 func main() {
 
 	// Common variables configuration
+
 	conf, err := goini.Load(dir + config)
 	if err != nil {
-		panic(err)
+		log.Printf("Bot poller: Config %s not found, go CLI mode", dir+config)
 	}
 
 	// Bot connection and polling configuration below
 	apiString := apiKey
 	if apiKey == "" {
 		apiString = conf.Str("main", "ApiKey")
+		if apiString == "" {
+			log.Printf("Bot poller: Something wrong with Apikey file, %s", apiString)
+			log.Panic(err)
+		}
 	}
 
 	bot, err := tgbotapi.NewBotAPI(apiString)
 	if err != nil {
-		log.Printf("Bot poller: Something wrong with yor key, %s", apiString)
+		log.Printf("Bot poller: Something wrong with your key, %s", apiString)
 		log.Panic(err)
 	}
 
