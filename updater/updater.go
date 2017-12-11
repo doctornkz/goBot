@@ -4,30 +4,13 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	// INI parser
-	"github.com/asjustas/goini"
+
 	// SQLite3 package
 	_ "github.com/mattn/go-sqlite3"
 )
 
 // Update message's counter
-func Update(ID int, UserName string, FirstName string, LastName string) {
-	// Open DB
-	//sqlite3.ErrCantOpen
-	conf, err := goini.Load("./settings.ini")
-	if err != nil {
-		panic(err)
-	}
-
-	sqliteDB := conf.Str("main", "SQLITE_DB")
-
-	db, err := sql.Open("sqlite3", sqliteDB) // TODO Dublicated INI parser
-	if err != nil {
-		log.Fatal(err)
-		// TODO: Input "Create DB?"
-	}
-	defer db.Close()
-
+func Update(db *sql.DB, ID int, UserName string, FirstName string, LastName string) {
 	// Select rows with ID
 	sqlSelectQuery := "select count from num_messages where userid= ?"
 	log.Printf("Updater: SQL Select %s", sqlSelectQuery)
@@ -42,6 +25,7 @@ func Update(ID int, UserName string, FirstName string, LastName string) {
 	var count int
 	operation := "update" // TODO Make simplier, or goto?
 	err = stmt.QueryRow(ID).Scan(&count)
+
 	if err != nil {
 		// New user detected
 		fmt.Println(err)
@@ -49,7 +33,7 @@ func Update(ID int, UserName string, FirstName string, LastName string) {
 		count = 0
 
 		operation = "insert"
-		UserUpdate(ID, UserName, FirstName, LastName)
+		UserUpdate(db, ID, UserName, FirstName, LastName)
 	}
 
 	log.Printf("Updater: UserID %d found with %d messages", ID, count)
@@ -69,14 +53,11 @@ func Update(ID int, UserName string, FirstName string, LastName string) {
 
 		sqlQuery = "insert into num_messages (userid, count) values (?, ?)"
 		log.Printf("Updater: SQL Insert %s", sqlQuery)
-		//sqlQueryName = "insert into user (userid, username, firstname, lastname) values (?, ?, ?, ?)"
-		//log.Printf("Updater: SQL Insert UserName %s", sqlQueryName)
 
 	} else {
 
 		sqlQuery = "update num_messages set count =? where userid = ?"
 		log.Printf("Updater: SQL Update %s", sqlQuery)
-		//update userinfo set username=? where uid=?
 	}
 
 	smth, err := tx.Prepare(sqlQuery)
@@ -97,7 +78,7 @@ func Update(ID int, UserName string, FirstName string, LastName string) {
 		}
 
 	} else {
-		_, err = smth.Exec(count, ID) // WTF?
+		_, err = smth.Exec(count, ID)
 		if err != nil {
 			log.Println(err)
 			log.Fatal(err)
@@ -108,27 +89,10 @@ func Update(ID int, UserName string, FirstName string, LastName string) {
 	log.Println("Updater: Pre commit step")
 	tx.Commit()
 	log.Println("Updater: Committed")
-
-	// Username database updating
-
 }
 
 // UserUpdate  Username updating
-func UserUpdate(ID int, UserName string, FirstName string, LastName string) {
-	// Open DB
-	//sqlite3.ErrCantOpen
-	conf, err := goini.Load("./settings.ini")
-	if err != nil {
-		panic(err)
-	}
-
-	sqliteDB := conf.Str("main", "SQLITE_DB")
-	db, err := sql.Open("sqlite3", sqliteDB)
-	if err != nil {
-		log.Fatal(err)
-		// TODO: Input "Create DB?"
-	}
-	defer db.Close()
+func UserUpdate(db *sql.DB, ID int, UserName string, FirstName string, LastName string) {
 
 	tx, err := db.Begin()
 	if err != nil {
@@ -137,8 +101,7 @@ func UserUpdate(ID int, UserName string, FirstName string, LastName string) {
 
 	sqlQueryUser := "insert into user (userid, username, firstname, lastname) values (?, ?, ?, ?)"
 	log.Printf("Updater: SQL Insert UserName %s", sqlQueryUser)
-	//sqlQueryName = "insert into user (userid, username, firstname, lastname) values (?, ?, ?, ?)"
-	//log.Printf("Updater: SQL Insert UserName %s", sqlQueryName)
+
 	smth, err := tx.Prepare(sqlQueryUser)
 	if err != nil {
 		log.Println(err)
@@ -151,5 +114,4 @@ func UserUpdate(ID int, UserName string, FirstName string, LastName string) {
 		log.Fatal(err)
 	}
 	tx.Commit()
-
 }

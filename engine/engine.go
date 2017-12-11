@@ -4,25 +4,10 @@ import (
 	"database/sql"
 	"log"
 	"strconv"
-
-	"github.com/asjustas/goini"
 )
 
 // Status  - TOP20 in chat
-func Status(ID int) string {
-	conf, err := goini.Load("./settings.ini")
-	if err != nil {
-		panic(err)
-	}
-
-	sqliteDB := conf.Str("main", "SQLITE_DB")
-
-	db, err := sql.Open("sqlite3", sqliteDB) // TODO DB manipulation
-	if err != nil {
-		log.Fatal(err)
-		// TODO: Input "Create DB?"
-	}
-	defer db.Close()
+func Status(db *sql.DB, ID int) string {
 
 	rows, err := db.Query("select user.username, user.firstname, num_messages.userid, num_messages.count from user inner join num_messages on user.userid=num_messages.userid order by count desc")
 	if err != nil {

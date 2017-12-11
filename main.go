@@ -1,26 +1,67 @@
 package main
 
 import (
+	"database/sql"
+	"flag"
 	"log"
 
-	"github.com/doctornkz/goBot/engine"
-
-	_ "github.com/mattn/go-sqlite3"
-
 	"github.com/asjustas/goini"
+	"github.com/doctornkz/goBot/engine"
 	updater "github.com/doctornkz/goBot/updater"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	_ "github.com/mattn/go-sqlite3"
 )
 
+var db *sql.DB
+var dbName string
+var dbDriver string
+var dir string
+var config string
+var apiKey string
+
+func init() {
+	dirPtr := flag.String("dir", "./", "Working directory")
+	confPtr := flag.String("c", "settings.ini", "default config file. See settings.ini.example")
+	apiKeyPtr := flag.String("apikey", "", "Bot ApiKey. See @BotFather messages for details")
+	dbNamePtr := flag.String("dbname", "empty.db", "Database of users")
+	dbDriverPtr := flag.String("dbdriver", "sqlite3", "Driver DB.")
+
+	flag.Parse()
+	dir = *dirPtr
+	config = *confPtr
+	apiKey = *apiKeyPtr
+	dbName = *dbNamePtr
+	dbDriver = *dbDriverPtr
+
+	var err error
+	log.Printf("Bot poller: DriverDB %s , NameDB %s", dbDriver, dbName)
+	db, err = sql.Open(dbDriver, dbName)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err = db.Ping(); err != nil {
+		log.Fatal(err)
+	}
+}
+
 func main() {
-	conf, err := goini.Load("./settings.ini")
+
+	// Common variables configuration
+	conf, err := goini.Load(dir + config)
 	if err != nil {
 		panic(err)
 	}
 
-	apiString := conf.Str("main", "ApiKey")
+	// Bot connection and polling configuration below
+	apiString := apiKey
+	if apiKey == "" {
+		apiString = conf.Str("main", "ApiKey")
+	}
+
 	bot, err := tgbotapi.NewBotAPI(apiString)
 	if err != nil {
+		log.Printf("Bot poller: Something wrong with yor key, %s", apiString)
 		log.Panic(err)
 	}
 
@@ -60,14 +101,14 @@ func main() {
 				case "sayhi":
 					msg.Text = "Hi :)"
 				case "status":
-					msg.Text = engine.Status(ID) // TODO Make limit
+					msg.Text = engine.Status(db, ID) // TODO Make limit
 				default:
 					msg.Text = "I don't know that command"
 				}
 				bot.Send(msg)
 			} else {
 				log.Printf("Bot poller: [%s] (ID: %d) %d %s", UserName, ID, ChatID, Text)
-				updater.Update(ID, UserName, FirstName, LastName) // TODO: make username translation
+				updater.Update(db, ID, UserName, FirstName, LastName) // TODO: make username translation
 			}
 		}
 	}
