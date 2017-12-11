@@ -23,7 +23,7 @@ func init() {
 	dirPtr := flag.String("dir", "./", "Working directory")
 	confPtr := flag.String("c", "settings.ini", "default config file. See settings.ini.example")
 	apiKeyPtr := flag.String("apikey", "", "Bot ApiKey. See @BotFather messages for details")
-	dbNamePtr := flag.String("dbname", "empty.db", "Database of users")
+	dbNamePtr := flag.String("dbname", "", "Database of users")
 	dbDriverPtr := flag.String("dbdriver", "sqlite3", "Driver DB.")
 
 	flag.Parse()
@@ -32,8 +32,31 @@ func init() {
 	apiKey = *apiKeyPtr
 	dbName = *dbNamePtr
 	dbDriver = *dbDriverPtr
-
 	var err error
+
+	conf, err := goini.Load(dir + config)
+	if err != nil {
+		log.Printf("Bot poller: Config %s not found, go CLI mode", dir+config)
+	}
+
+	//dbNameString := dbName
+	if dbName == "" {
+		dbName = conf.Str("main", "SQLITE_DB")
+		if dbName == "" {
+			log.Printf("Bot poller: Something wrong with DB name, %s", dbName)
+			log.Panic(err)
+		}
+	}
+
+	//apiString := apiKey
+	if apiKey == "" {
+		apiKey = conf.Str("main", "ApiKey")
+		if apiKey == "" {
+			log.Printf("Bot poller: Something wrong with Apikey file, %s", apiKey)
+			log.Panic(err)
+		}
+	}
+
 	log.Printf("Bot poller: DriverDB %s , NameDB %s", dbDriver, dbName)
 	db, err = sql.Open(dbDriver, dbName)
 	if err != nil {
@@ -47,26 +70,9 @@ func init() {
 
 func main() {
 
-	// Common variables configuration
-
-	conf, err := goini.Load(dir + config)
+	bot, err := tgbotapi.NewBotAPI(apiKey)
 	if err != nil {
-		log.Printf("Bot poller: Config %s not found, go CLI mode", dir+config)
-	}
-
-	// Bot connection and polling configuration below
-	apiString := apiKey
-	if apiKey == "" {
-		apiString = conf.Str("main", "ApiKey")
-		if apiString == "" {
-			log.Printf("Bot poller: Something wrong with Apikey file, %s", apiString)
-			log.Panic(err)
-		}
-	}
-
-	bot, err := tgbotapi.NewBotAPI(apiString)
-	if err != nil {
-		log.Printf("Bot poller: Something wrong with your key, %s", apiString)
+		log.Printf("Bot poller: Something wrong with your key, %s", apiKey)
 		log.Panic(err)
 	}
 
@@ -97,6 +103,8 @@ func main() {
 			ChatID := update.Message.Chat.ID
 			log.Println("Bot poller: Text sections")
 			Text := update.Message.Text
+			log.Println("Bot poller: Text sections")
+			Date := update.Message.Date
 			log.Printf("Bot poller: ID: %d UserName: %s FirstName: %s LastName: %s", ID, UserName, FirstName, LastName)
 			if update.Message.IsCommand() {
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "")
@@ -113,7 +121,7 @@ func main() {
 				bot.Send(msg)
 			} else {
 				log.Printf("Bot poller: [%s] (ID: %d) %d %s", UserName, ID, ChatID, Text)
-				updater.Update(db, ID, UserName, FirstName, LastName) // TODO: make username translation
+				updater.Update(db, ID, UserName, FirstName, LastName, Date, Text) // TODO: make username translation
 			}
 		}
 	}

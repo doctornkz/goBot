@@ -10,7 +10,7 @@ import (
 )
 
 // Update message's counter
-func Update(db *sql.DB, ID int, UserName string, FirstName string, LastName string) {
+func Update(db *sql.DB, ID int, UserName string, FirstName string, LastName string, Date int, Text string) {
 	// Select rows with ID
 	sqlSelectQuery := "select count from num_messages where userid= ?"
 	log.Printf("Updater: SQL Select %s", sqlSelectQuery)
@@ -33,8 +33,13 @@ func Update(db *sql.DB, ID int, UserName string, FirstName string, LastName stri
 		count = 0
 
 		operation = "insert"
-		UserUpdate(db, ID, UserName, FirstName, LastName)
+		userUpdate(db, ID, UserName, FirstName, LastName)
 	}
+
+	// Update messages
+	log.Printf("Updater: Place new message in DB")
+
+	messagesUpdate(db, ID, Date, Text)
 
 	log.Printf("Updater: UserID %d found with %d messages", ID, count)
 
@@ -91,8 +96,37 @@ func Update(db *sql.DB, ID int, UserName string, FirstName string, LastName stri
 	log.Println("Updater: Committed")
 }
 
+// MessagesUpdate - updater messages in chat
+func messagesUpdate(db *sql.DB, ID int, Date int, Text string) {
+	log.Println("Updater: Messages insert section")
+	tx, err := db.Begin()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	sqlMessQuery := "insert into messages (userid, date, text) values (?, ?, ?)"
+	log.Printf("Updater: SQL Insert %s", sqlMessQuery)
+
+	updateMessageState, err := tx.Prepare(sqlMessQuery)
+	if err != nil {
+		log.Println(err)
+		panic(err)
+	}
+	defer updateMessageState.Close()
+
+	_, err = updateMessageState.Exec(ID, Date, Text)
+	if err != nil {
+		log.Println(err)
+		log.Fatal(err)
+	}
+
+	tx.Commit()
+	log.Println("Updater: Message committed")
+
+}
+
 // UserUpdate  Username updating
-func UserUpdate(db *sql.DB, ID int, UserName string, FirstName string, LastName string) {
+func userUpdate(db *sql.DB, ID int, UserName string, FirstName string, LastName string) {
 
 	tx, err := db.Begin()
 	if err != nil {
@@ -102,13 +136,14 @@ func UserUpdate(db *sql.DB, ID int, UserName string, FirstName string, LastName 
 	sqlQueryUser := "insert into user (userid, username, firstname, lastname) values (?, ?, ?, ?)"
 	log.Printf("Updater: SQL Insert UserName %s", sqlQueryUser)
 
-	smth, err := tx.Prepare(sqlQueryUser)
+	updateUserState, err := tx.Prepare(sqlQueryUser)
 	if err != nil {
 		log.Println(err)
 		panic(err)
 	}
-	defer smth.Close()
-	_, err = smth.Exec(ID, UserName, FirstName, LastName)
+	defer updateUserState.Close()
+
+	_, err = updateUserState.Exec(ID, UserName, FirstName, LastName)
 	if err != nil {
 		log.Println(err)
 		log.Fatal(err)
