@@ -12,67 +12,79 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-var db *sql.DB
-var dbName string
-var dbDriver string
-var dir string
-var config string
-var apiKey string
+var config = struct {
+	db       *sql.DB
+	dbName   string
+	dbDriver string
+	dir      string
+	config   string
+	apiKey   string
+	chatID   int64
+}{
+	dbName:   "./empty.db",
+	dbDriver: "sqlite3",
+	dir:      "./",
+	config:   "settings.ini",
+	apiKey:   "",
+	chatID:   0,
+}
 
 func init() {
 	dirPtr := flag.String("dir", "./", "Working directory")
 	confPtr := flag.String("c", "settings.ini", "default config file. See settings.ini.example")
 	apiKeyPtr := flag.String("apikey", "", "Bot ApiKey. See @BotFather messages for details")
+	chatIDPtr := flag.Int64("chat", 0, "Chat uniq ID")
 	dbNamePtr := flag.String("dbname", "", "Database of users")
 	dbDriverPtr := flag.String("dbdriver", "sqlite3", "Driver DB.")
 
 	flag.Parse()
-	dir = *dirPtr
-	config = *confPtr
-	apiKey = *apiKeyPtr
-	dbName = *dbNamePtr
-	dbDriver = *dbDriverPtr
-	var err error
 
-	conf, err := goini.Load(dir + config)
+	config.dir = *dirPtr
+	config.config = *confPtr
+	config.apiKey = *apiKeyPtr
+	config.dbName = *dbNamePtr
+	config.dbDriver = *dbDriverPtr
+	config.chatID = *chatIDPtr
+
+	conf, err := goini.Load(config.dir + config.config)
 	if err != nil {
-		log.Printf("Bot poller: Config %s not found, go CLI mode", dir+config)
+		log.Printf("Bot poller: Config %s not found, go CLI mode", config.dir+config.config)
 	}
 
 	//dbNameString := dbName
-	if dbName == "" {
-		dbName = conf.Str("main", "SQLITE_DB")
-		if dbName == "" {
-			log.Printf("Bot poller: Something wrong with DB name, %s", dbName)
+	if config.dbName == "" {
+		config.dbName = conf.Str("main", "SQLITE_DB")
+		if config.dbName == "" {
+			log.Printf("Bot poller: Something wrong with DB name, %s", config.dbName)
 			log.Panic(err)
 		}
 	}
 
 	//apiString := apiKey
-	if apiKey == "" {
-		apiKey = conf.Str("main", "ApiKey")
-		if apiKey == "" {
-			log.Printf("Bot poller: Something wrong with Apikey file, %s", apiKey)
+	if config.apiKey == "" {
+		config.apiKey = conf.Str("main", "ApiKey")
+		if config.apiKey == "" {
+			log.Printf("Bot poller: Something wrong with Apikey file, %s", config.apiKey)
 			log.Panic(err)
 		}
 	}
 
-	log.Printf("Bot poller: DriverDB %s , NameDB %s", dbDriver, dbName)
-	db, err = sql.Open(dbDriver, dbName)
+	log.Printf("Bot poller: DriverDB %s , NameDB %s", config.dbDriver, config.dbName)
+	config.db, err = sql.Open(config.dbDriver, config.dbName)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if err = db.Ping(); err != nil {
+	if err = config.db.Ping(); err != nil {
 		log.Fatal(err)
 	}
 }
 
 func main() {
 
-	bot, err := tgbotapi.NewBotAPI(apiKey)
+	bot, err := tgbotapi.NewBotAPI(config.apiKey)
 	if err != nil {
-		log.Printf("Bot poller: Something wrong with your key, %s", apiKey)
+		log.Printf("Bot poller: Something wrong with your key, %s", config.apiKey)
 		log.Panic(err)
 	}
 
@@ -100,29 +112,34 @@ func main() {
 			log.Println("Bot poller: LastName section")
 			LastName := update.Message.From.LastName
 			log.Println("Bot poller: ChatID section")
-			ChatID := update.Message.Chat.ID
 			log.Println("Bot poller: Text sections")
 			Text := update.Message.Text
 			log.Println("Bot poller: Text sections")
 			Date := update.Message.Date
 			log.Printf("Bot poller: ID: %d UserName: %s FirstName: %s LastName: %s", ID, UserName, FirstName, LastName)
-			if update.Message.IsCommand() {
-				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "")
+			CurrentChatID := update.Message.Chat.ID
+			if CurrentChatID != config.chatID {
+				log.Printf("Bot poller: Wrong chat %d ID: %d UserName: %s FirstName: %s LastName: %s", CurrentChatID, ID, UserName, FirstName, LastName)
+				continue
+			}
+			if update.Message.IsCommand() && engine.IfUserExist(config.db, ID) {
+				msg := tgbotapi.NewMessage(config.chatID, "")
 				switch update.Message.Command() {
 				case "help":
 					msg.Text = "type /sayhi or /status."
 				case "sayhi":
 					msg.Text = "Hi :)"
 				case "status":
-					msg.Text = engine.Status(db, ID) // TODO Make limit
+					msg.Text = engine.Status(config.db, ID) // TODO Make limit
 				default:
 					msg.Text = "I don't know that command"
 				}
 				bot.Send(msg)
 			} else {
-				log.Printf("Bot poller: [%s] (ID: %d) %d %s", UserName, ID, ChatID, Text)
-				updater.Update(db, ID, UserName, FirstName, LastName, Date, Text) // TODO: make username translation
+				log.Printf("Bot poller: [%s] (ID: %d) %d %s", UserName, ID, config.chatID, Text)
+				updater.Update(config.db, ID, UserName, FirstName, LastName, Date, Text) // TODO: make username translation
 			}
+
 		}
 	}
 

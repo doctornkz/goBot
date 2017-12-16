@@ -6,9 +6,32 @@ import (
 	"strconv"
 )
 
+// IfUserExist check user valid in chat
+func IfUserExist(db *sql.DB, ID int) bool {
+	// Select rows with ID
+	sqlSelectQuery := "select count from num_messages where userid= ?"
+	query, err := db.Prepare(sqlSelectQuery)
+	if err != nil {
+		log.Println("Engine: ifUserExist false on Prepare")
+		log.Fatal(err)
+		return false
+	}
+	defer query.Close()
+	// Query section
+	var count int
+	err = query.QueryRow(ID).Scan(&count)
+	if err != nil {
+		log.Println("Engine: ifUserExist false on Scan")
+		log.Println(err)
+		return false
+	}
+	log.Println("Engine: ifUserExist true")
+	return true
+
+}
+
 // Status  - TOP20 in chat
 func Status(db *sql.DB, ID int) string {
-
 	rows, err := db.Query("select user.username, user.firstname, num_messages.userid, num_messages.count from user inner join num_messages on user.userid=num_messages.userid order by count desc")
 	if err != nil {
 		log.Fatal(err)
