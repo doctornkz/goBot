@@ -128,26 +128,26 @@ func messagesUpdate(db *sql.DB, ID int, Date int, Text string) {
 	for _, Word := range strings.Split(Text, " ") {
 		if !strings.Contains(cleanedMessage, Word) {
 			if checkWord(db, stemming(Word)) == 1 { // FIXME: Hardcoded category
-				cleanedMessage += " " + Word
+				var re = regexp.MustCompile(`[a-z]|[@$%&*~#=/_"!?. ,:;\-\\+1234567890(){}\[\]]`)
+				Word = re.ReplaceAllString(Word, "")
+
+				sqlMessQuery := "insert into messages (userid, date, text) values (?, ?, ?)"
+				log.Printf("Updater: SQL Insert %s", sqlMessQuery)
+
+				updateMessageState, err := tx.Prepare(sqlMessQuery)
+				check(err)
+				defer updateMessageState.Close()
+
+				_, err = updateMessageState.Exec(ID, Date, Word)
+				check(err)
+
+				log.Println("Updater: Message committed")
 			}
 		}
 	}
+	tx.Commit()
 	log.Printf("Updater: Phrase to save: %s", cleanedMessage)
 
-	if cleanedMessage != "" {
-		sqlMessQuery := "insert into messages (userid, date, text) values (?, ?, ?)"
-		log.Printf("Updater: SQL Insert %s", sqlMessQuery)
-
-		updateMessageState, err := tx.Prepare(sqlMessQuery)
-		check(err)
-		defer updateMessageState.Close()
-
-		_, err = updateMessageState.Exec(ID, Date, cleanedMessage)
-		check(err)
-
-		tx.Commit()
-		log.Println("Updater: Message committed")
-	}
 }
 
 // UserUpdate  Username updating
