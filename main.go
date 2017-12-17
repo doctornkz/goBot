@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"flag"
 	"log"
-	"os"
 
 	"github.com/asjustas/goini"
 	"github.com/doctornkz/goBot/engine"
@@ -33,14 +32,6 @@ var config = struct {
 }
 
 func init() {
-	file, err := os.OpenFile(config.logfile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-	log.SetOutput(file)
-	log.Println("Log init section: Logging initialized")
-
 	dirPtr := flag.String("dir", "./", "Working directory")
 	confPtr := flag.String("c", "settings.ini", "default config file. See settings.ini.example")
 	apiKeyPtr := flag.String("apikey", "", "Bot ApiKey. See @BotFather messages for details")
@@ -59,6 +50,7 @@ func init() {
 
 	conf, err := goini.Load(config.dir + config.config)
 	if err != nil {
+
 		log.Printf("Bot poller: Config %s not found, go CLI mode", config.dir+config.config)
 	}
 
@@ -133,6 +125,8 @@ func main() {
 					msg.Text = "type /sayhi or /status."
 				case "sayhi":
 					msg.Text = "Hi :)"
+				case "digest12h":
+					msg.Text = engine.Digest(config.db, 12) // To do hours and ID
 				case "status":
 					msg.Text = engine.Status(config.db, ID) // TODO Make limit
 				default:

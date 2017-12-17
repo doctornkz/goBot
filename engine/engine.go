@@ -4,7 +4,16 @@ import (
 	"database/sql"
 	"log"
 	"strconv"
+	"strings"
+	"time"
+	//logger "github.com/doctornkz/goBot/logger"
 )
+
+func check(e error) {
+	if e != nil {
+		panic(e)
+	}
+}
 
 // IfUserExist check user valid in chat
 func IfUserExist(db *sql.DB, ID int) bool {
@@ -33,10 +42,9 @@ func IfUserExist(db *sql.DB, ID int) bool {
 // Status  - TOP20 in chat
 func Status(db *sql.DB, ID int) string {
 	rows, err := db.Query("select user.username, user.firstname, num_messages.userid, num_messages.count from user inner join num_messages on user.userid=num_messages.userid order by count desc")
-	if err != nil {
-		log.Fatal(err)
-	}
+	check(err)
 	defer rows.Close()
+
 	output := " -= TOP LIST =- \r\n"
 	index := 1
 	limit := 20
@@ -50,9 +58,7 @@ func Status(db *sql.DB, ID int) string {
 			username = firstname
 		}
 
-		if err != nil {
-			log.Fatal(err)
-		}
+		check(err)
 		log.Println(strconv.Itoa(index), username, count)
 
 		if index <= limit {
@@ -66,9 +72,63 @@ func Status(db *sql.DB, ID int) string {
 	}
 
 	err = rows.Err()
-	if err != nil {
-		log.Fatal(err)
-	}
+	check(err)
 
 	return output
+}
+
+// Digest generator
+func Digest(db *sql.DB, historyhour int64) string {
+
+	now := time.Now().Unix()
+	period := now - historyhour*60*60
+	log.Println(period)
+
+	///Date := time
+	rows, err := db.Query("select userid, text from messages where date>=?", period)
+	check(err)
+	defer rows.Close()
+
+	header := " -= DIGEST 12H =- \r\n"
+	cleanedMessage := ""
+	flooders := ""
+	for rows.Next() {
+		var messages string
+		var userid int
+		err = rows.Scan(&userid, &messages)
+		for _, Word := range strings.Split(messages, " ") {
+			username := userid2Name(db, userid)
+			if !strings.Contains(cleanedMessage, Word) {
+				cleanedMessage += Word + " "
+			}
+			if !strings.Contains(flooders, username) {
+				flooders += username + " "
+			}
+		}
+	}
+	check(err)
+	if cleanedMessage != "" {
+		return header + cleanedMessage + "( " + flooders + ")"
+	}
+	return "Digest is empty "
+}
+
+func userid2Name(db *sql.DB, ID int) string {
+	// Select rows with ID
+	sqlSelectQuery := "select username, firstname from user where userid=?"
+	query, err := db.Prepare(sqlSelectQuery)
+	check(err)
+	defer query.Close()
+
+	// Query section
+	var username string
+	var firstname string
+	err = query.QueryRow(ID).Scan(&username, &firstname)
+	check(err)
+	if username != "" {
+		return username
+	}
+
+	return firstname
+
 }
