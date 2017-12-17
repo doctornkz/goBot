@@ -21,6 +21,7 @@ func check(e error) {
 	}
 }
 
+// Update - update function about user activity
 func Update(db *sql.DB, ID int, UserName string, FirstName string, LastName string, Date int, Text string) {
 	// Select rows with ID
 	sqlSelectQuery := "select count from num_messages where userid= ?"

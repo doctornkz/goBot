@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	//logger "github.com/doctornkz/goBot/logger"
 )
 
 func check(e error) {
@@ -80,11 +79,8 @@ func Status(db *sql.DB, ID int) string {
 // Digest generator
 func Digest(db *sql.DB, historyhour int64) string {
 
-	now := time.Now().Unix()
-	period := now - historyhour*60*60
-	log.Println(period)
+	period := time.Now().Unix() - historyhour*60*60
 
-	///Date := time
 	rows, err := db.Query("select userid, text from messages where date>=?", period)
 	check(err)
 	defer rows.Close()
