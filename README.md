@@ -28,6 +28,8 @@ Usage of /home/goBot:
         Database of users (default "empty.db")
   -dir string
         Working directory (default "./")
+  -chat int
+        Chat uniq ID
 ```
 
 ### Simple settings.ini
@@ -45,7 +47,8 @@ sudo docker run -v /etc/ssl/certs/:/etc/ssl/certs \
 -v /tmp/empty.db:/home/empty.db \
 -t doctornkz/gobot \
 -apikey <YOUR_KEY> \
--dbname /home/empty.db
+-dbname /home/empty.db \
+-chat <CHAT_ID>
 ```
 
 # Using 
