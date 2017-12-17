@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"flag"
 	"log"
+	"os"
 
 	"github.com/asjustas/goini"
 	"github.com/doctornkz/goBot/engine"
@@ -20,6 +21,7 @@ var config = struct {
 	config   string
 	apiKey   string
 	chatID   int64
+	logfile  string
 }{
 	dbName:   "./empty.db",
 	dbDriver: "sqlite3",
@@ -27,9 +29,18 @@ var config = struct {
 	config:   "settings.ini",
 	apiKey:   "",
 	chatID:   0,
+	logfile:  "./gobot.log",
 }
 
 func init() {
+	file, err := os.OpenFile(config.logfile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+	log.SetOutput(file)
+	log.Println("Log init section: Logging initialized")
+
 	dirPtr := flag.String("dir", "./", "Working directory")
 	confPtr := flag.String("c", "settings.ini", "default config file. See settings.ini.example")
 	apiKeyPtr := flag.String("apikey", "", "Bot ApiKey. See @BotFather messages for details")
@@ -103,18 +114,11 @@ func main() {
 			if update.Message == nil {
 				continue
 			}
-			log.Println("Bot poller: ID section")
 			ID := update.Message.From.ID
-			log.Println("Bot poller: UserName section")
 			UserName := update.Message.From.UserName
-			log.Println("Bot poller: FirstName section")
 			FirstName := update.Message.From.FirstName
-			log.Println("Bot poller: LastName section")
 			LastName := update.Message.From.LastName
-			log.Println("Bot poller: ChatID section")
-			log.Println("Bot poller: Text sections")
 			Text := update.Message.Text
-			log.Println("Bot poller: Text sections")
 			Date := update.Message.Date
 			log.Printf("Bot poller: ID: %d UserName: %s FirstName: %s LastName: %s", ID, UserName, FirstName, LastName)
 			CurrentChatID := update.Message.Chat.ID
