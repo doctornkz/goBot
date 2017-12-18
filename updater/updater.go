@@ -2,11 +2,11 @@ package updater
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 	"regexp"
 	"strings"
 
+	"github.com/doctornkz/goBot/engine"
 	// Snowball stemmer
 	"github.com/kljensen/snowball"
 	// SQLite3 package
@@ -24,72 +24,31 @@ func check(e error) {
 // Update - update function about user activity
 func Update(db *sql.DB, ID int, UserName string, FirstName string, LastName string, Date int, Text string) {
 	// Select rows with ID
-	sqlSelectQuery := "select count from num_messages where userid= ?"
-	log.Printf("Updater: SQL Select %s", sqlSelectQuery)
-	stmt, err := db.Prepare(sqlSelectQuery)
-	check(err)
-	defer stmt.Close()
+	user := engine.GetUser(db, ID)
 
-	// Query section
-	//var userid int
-	var count int
-	operation := "update" // TODO Make simplier, or goto?
-	err = stmt.QueryRow(ID).Scan(&count)
-	if err != nil {
-		// New user detected
-		fmt.Println(err)
-		//userid = ID
-		count = 0
-		operation = "insert"
-		userUpdate(db, ID, UserName, FirstName, LastName)
-	}
-
-	// Update messages
-	log.Printf("Updater: Place new phrase in DB")
-
-	messagesUpdate(db, ID, Date, Text)
-
-	log.Printf("Updater: UserID %d found with %d messages", ID, count)
-
-	// Insert section
-	log.Printf("Updater: Operation flag is %s", operation)
-	// Begin section
-	tx, err := db.Begin()
-	check(err)
-
-	var sqlQuery string
-	// Prepare section
-
-	if operation == "insert" {
-
-		sqlQuery = "insert into num_messages (userid, count) values (?, ?)"
-		log.Printf("Updater: SQL Insert %s", sqlQuery)
+	if user.NumMessages == -1 {
+		user.UserID = ID
+		user.UserName = UserName
+		user.FirstName = FirstName
+		user.LastName = LastName
+		user.NumMessages = -1
+		engine.SetUser(db, user)
+		messagesUpdate(db, ID, Date, Text)
 
 	} else {
 
-		sqlQuery = "update num_messages set count =? where userid = ?"
-		log.Printf("Updater: SQL Update %s", sqlQuery)
+		messagesUpdate(db, ID, Date, Text)
+
 	}
 
-	smth, err := tx.Prepare(sqlQuery)
-	check(err)
-	defer smth.Close()
-	// Exec section
+	currentNumMessages := user.NumMessages
+	log.Printf("Updater: %s, %d", user.UserName, currentNumMessages)
+	user.NumMessages = currentNumMessages + 1
+	log.Printf("Updater: %s, %d", user.UserName, user.NumMessages)
+	log.Println(user)
 
-	count++
-	log.Printf("Updater: UserID: %d count: %d", ID, count)
-	if operation == "insert" {
-		_, err = smth.Exec(ID, count)
-		check(err)
-	} else {
-		_, err = smth.Exec(count, ID)
-		check(err)
-	}
+	engine.SetUser(db, user)
 
-	// Commit section
-	log.Println("Updater: Pre commit step")
-	tx.Commit()
-	log.Println("Updater: Committed")
 }
 
 func checkWord(db *sql.DB, Word string) int {
@@ -124,7 +83,6 @@ func messagesUpdate(db *sql.DB, ID int, Date int, Text string) {
 	tx, err := db.Begin()
 	check(err)
 
-	//
 	cleanedMessage := ""
 	for _, Word := range strings.Split(Text, " ") {
 		if !strings.Contains(cleanedMessage, Word) {
@@ -149,24 +107,6 @@ func messagesUpdate(db *sql.DB, ID int, Date int, Text string) {
 	tx.Commit()
 	log.Printf("Updater: Phrase to save: %s", cleanedMessage)
 
-}
-
-// UserUpdate  Username updating
-func userUpdate(db *sql.DB, ID int, UserName string, FirstName string, LastName string) {
-
-	tx, err := db.Begin()
-	check(err)
-
-	sqlQueryUser := "insert into user (userid, username, firstname, lastname) values (?, ?, ?, ?)"
-	log.Printf("Updater: SQL Insert UserName %s", sqlQueryUser)
-
-	updateUserState, err := tx.Prepare(sqlQueryUser)
-	check(err)
-	defer updateUserState.Close()
-
-	_, err = updateUserState.Exec(ID, UserName, FirstName, LastName)
-	check(err)
-	tx.Commit()
 }
 
 func stemming(Word string) string {

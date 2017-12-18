@@ -91,7 +91,7 @@ func main() {
 		log.Panic(err)
 	}
 
-	bot.Debug = true
+	bot.Debug = false
 
 	log.Printf("Bot poller: Authorized on account %s", bot.Self.UserName)
 
@@ -107,6 +107,8 @@ func main() {
 				continue
 			}
 			ID := update.Message.From.ID
+			user := engine.GetUser(config.db, ID)
+
 			UserName := update.Message.From.UserName
 			FirstName := update.Message.From.FirstName
 			LastName := update.Message.From.LastName
@@ -118,11 +120,12 @@ func main() {
 				log.Printf("Bot poller: Wrong chat %d ID: %d UserName: %s FirstName: %s LastName: %s", CurrentChatID, ID, UserName, FirstName, LastName)
 				continue
 			}
-			if update.Message.IsCommand() && engine.IfUserExist(config.db, ID) {
+
+			if update.Message.IsCommand() && user.NumMessages > 0 {
 				msg := tgbotapi.NewMessage(config.chatID, "")
 				switch update.Message.Command() {
 				case "help":
-					msg.Text = "type /sayhi or /status."
+					msg.Text = "type /sayhi, /digest12h or /status."
 				case "sayhi":
 					msg.Text = "Hi :)"
 				case "digest12h":
@@ -135,6 +138,7 @@ func main() {
 				bot.Send(msg)
 			} else {
 				log.Printf("Bot poller: [%s] (ID: %d) %d %s", UserName, ID, config.chatID, Text)
+				//TODO Move to struct
 				updater.Update(config.db, ID, UserName, FirstName, LastName, Date, Text) // TODO: make username translation
 			}
 
