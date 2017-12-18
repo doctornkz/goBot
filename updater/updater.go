@@ -40,11 +40,7 @@ func Update(db *sql.DB, ID int, UserName string, FirstName string, LastName stri
 		messagesUpdate(db, ID, Date, Text)
 
 	}
-
-	currentNumMessages := user.NumMessages
-	log.Printf("Updater: %s, %d", user.UserName, currentNumMessages)
-	user.NumMessages = currentNumMessages + 1
-	log.Printf("Updater: %s, %d", user.UserName, user.NumMessages)
+	user.NumMessages++
 	log.Println(user)
 
 	engine.SetUser(db, user)
