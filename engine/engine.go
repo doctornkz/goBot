@@ -15,6 +15,7 @@ type User struct {
 	FirstName   string
 	LastName    string
 	NumMessages int
+	Date        int64 // Time of entering chat or leaving
 }
 
 func check(e error) {
@@ -27,33 +28,22 @@ func check(e error) {
 func SetUser(db *sql.DB, user *User) {
 	tx, err := db.Begin()
 	check(err)
-	if user.NumMessages == -1 {
 
-		sqlQueryUser := "insert into user (userid, username, firstname, lastname, num_messages) values (?, ?, ?, ?, ?)"
-		log.Printf("Engine: SQL Insert UserName %s", sqlQueryUser)
-		insertUserState, err := tx.Prepare(sqlQueryUser)
-		check(err)
-		defer insertUserState.Close()
-		_, err = insertUserState.Exec(user.UserID, user.UserName, user.FirstName, user.LastName, user.NumMessages)
-		check(err)
+	sqlQueryUser := "insert or replace into user (userid, username, firstname, lastname, num_messages, date) values (?, ?, ?, ?, ?, ?)"
 
-	} else {
-		sqlQueryUser := "update user set username=?, firstname=?, lastname=?, num_messages=? where userid=?"
-		log.Printf("Engine: SQL Update UserName %s", sqlQueryUser)
-		updateUserState, err := tx.Prepare(sqlQueryUser)
-		check(err)
-		defer updateUserState.Close()
-		_, err = updateUserState.Exec(user.UserName, user.FirstName, user.LastName, user.NumMessages, user.UserID)
-		check(err)
-
-	}
+	log.Printf("Engine: SQL Insert %s", sqlQueryUser)
+	insertUserState, err := tx.Prepare(sqlQueryUser)
+	check(err)
+	defer insertUserState.Close()
+	_, err = insertUserState.Exec(user.UserID, user.UserName, user.FirstName, user.LastName, user.NumMessages, user.Date)
+	check(err)
 
 	tx.Commit()
 }
 
 // GetUser - main function around user
 func GetUser(db *sql.DB, ID int) (user *User) {
-	sqlSelectQuery := "select username, firstname, lastname, num_messages from user where userid=?"
+	sqlSelectQuery := "select username, firstname, lastname, num_messages, date from user where userid=?"
 	query, err := db.Prepare(sqlSelectQuery)
 	if err != nil {
 		log.Println("Engine: GetUser failed on Prepare")
@@ -64,8 +54,9 @@ func GetUser(db *sql.DB, ID int) (user *User) {
 	var firstname string
 	var lastname string
 	var nummessages int
+	var date int64
 
-	err = query.QueryRow(ID).Scan(&username, &firstname, &lastname, &nummessages)
+	err = query.QueryRow(ID).Scan(&username, &firstname, &lastname, &nummessages, &date)
 	if err != nil {
 		log.Println("Engine: User is not exist")
 		return &User{
@@ -73,7 +64,8 @@ func GetUser(db *sql.DB, ID int) (user *User) {
 			UserName:    "",
 			FirstName:   "",
 			LastName:    "",
-			NumMessages: -1, // Not existing user
+			NumMessages: -1, //  -1:Left or non-existing user, 0:New user, 0+: Active user
+			Date:        time.Now().Unix(),
 		}
 	}
 	log.Println("Engine: User exist")
@@ -83,6 +75,7 @@ func GetUser(db *sql.DB, ID int) (user *User) {
 		FirstName:   firstname,
 		LastName:    lastname,
 		NumMessages: nummessages,
+		Date:        date,
 	}
 
 }
@@ -126,7 +119,7 @@ func Status(db *sql.DB, ID int) string {
 func Digest(db *sql.DB, historyhour int64) string {
 
 	period := time.Now().Unix() - historyhour*60*60
-
+	// Select active users
 	userrows, err := db.Query("select distinct userid from messages where date>=?", period)
 	check(err)
 	defer userrows.Close()
@@ -145,12 +138,41 @@ func Digest(db *sql.DB, historyhour int64) string {
 		}
 		check(err)
 	}
+
+	// Select entered and left users
+	statusrows, err := db.Query("select distinct userid, num_messages from user where date>=? ", period)
+	check(err)
+	defer userrows.Close()
+
+	newusers := "New user(s): "
+	leftusers := "User(s) left: "
+	for statusrows.Next() {
+		var userid int
+		var nummessages int
+		err = statusrows.Scan(&userid, &nummessages)
+		username := GetUser(db, userid).UserName
+
+		if username == "" {
+			username = GetUser(db, userid).FirstName
+		}
+
+		if nummessages < 0 {
+			leftusers += username + ", "
+		} else {
+			newusers += username + ", "
+
+		}
+
+		check(err)
+	}
+
+	// Select tags
 	rows, err := db.Query("select text from messages where date>=?", period)
 	check(err)
 	defer rows.Close()
 
 	header := " -= DIGEST 12H =- \r\n"
-	cleanedMessage := ""
+	cleanedMessage := "Buzz words: "
 	for rows.Next() {
 		var messages string
 		err = rows.Scan(&messages)
@@ -162,8 +184,11 @@ func Digest(db *sql.DB, historyhour int64) string {
 		}
 	}
 	check(err)
+	// TODO Re-think digest composer
+
 	if cleanedMessage != "" {
-		return header + cleanedMessage + "( " + users + ")"
+		return header + cleanedMessage + "( " + users + ")" + "\r\n" + newusers + "\r\n" + leftusers
 	}
-	return "Digest is empty "
+
+	return "Digest is empty " + "\r\n" + newusers + "\r\n" + leftusers
 }

@@ -4,10 +4,11 @@ import (
 	"database/sql"
 	"flag"
 	"log"
+	"time"
 
 	"github.com/asjustas/goini"
 	"github.com/doctornkz/goBot/engine"
-	updater "github.com/doctornkz/goBot/updater"
+	"github.com/doctornkz/goBot/updater"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -109,17 +110,20 @@ func main() {
 			ID := update.Message.From.ID
 			user := engine.GetUser(config.db, ID)
 
-			UserName := update.Message.From.UserName
-			FirstName := update.Message.From.FirstName
-			LastName := update.Message.From.LastName
-			Text := update.Message.Text
-			Date := update.Message.Date
-			log.Printf("Bot poller: ID: %d UserName: %s FirstName: %s LastName: %s", ID, UserName, FirstName, LastName)
-			CurrentChatID := update.Message.Chat.ID
-			if CurrentChatID != config.chatID {
-				log.Printf("Bot poller: Wrong chat %d ID: %d UserName: %s FirstName: %s LastName: %s", CurrentChatID, ID, UserName, FirstName, LastName)
+			username := update.Message.From.UserName
+			firstname := update.Message.From.FirstName
+			lastname := update.Message.From.LastName
+			text := update.Message.Text
+			date := update.Message.Date
+			newuser := update.Message.NewChatMembers
+			leftuser := update.Message.LeftChatMember
+			log.Printf("Bot poller: ID: %d UserName: %s FirstName: %s LastName: %s", ID, username, firstname, lastname)
+			currentChatID := update.Message.Chat.ID
+			if currentChatID != config.chatID {
+				log.Printf("Bot poller: Wrong chat %d ID: %d UserName: %s FirstName: %s LastName: %s", currentChatID, ID, username, firstname, lastname)
 				continue
 			}
+			// Command messages
 
 			if update.Message.IsCommand() && user.NumMessages > 0 {
 				msg := tgbotapi.NewMessage(config.chatID, "")
@@ -137,9 +141,37 @@ func main() {
 				}
 				bot.Send(msg)
 			} else {
-				log.Printf("Bot poller: [%s] (ID: %d) %d %s", UserName, ID, config.chatID, Text)
-				//TODO Move to struct
-				updater.Update(config.db, ID, UserName, FirstName, LastName, Date, Text) // TODO: make username translation
+				log.Printf("Bot poller: [%s] (ID: %d) %d %s", username, ID, config.chatID, text)
+				// Check new and left users:  // TODO: Lots the duplicates, replace to function?
+				if leftuser != nil {
+					user := engine.GetUser(config.db, leftuser.ID)
+					user.UserID = leftuser.ID
+					user.UserName = leftuser.UserName
+					user.FirstName = leftuser.FirstName
+					user.LastName = leftuser.LastName
+					user.Date = time.Now().Unix()
+					user.NumMessages = -1
+					engine.SetUser(config.db, user)
+					log.Println("Bot Poller: User " + leftuser.FirstName + " go out from Chat")
+
+				} else if newuser != nil {
+					for _, newuservalue := range *newuser {
+						user := engine.GetUser(config.db, newuservalue.ID)
+						user.UserID = newuservalue.ID
+						user.UserName = newuservalue.UserName
+						user.FirstName = newuservalue.FirstName
+						user.LastName = newuservalue.LastName
+						user.Date = time.Now().Unix() // FIXME Double check time with non-existing user
+						user.NumMessages = 0
+						engine.SetUser(config.db, user)
+						log.Println("Bot Poller: User " + newuservalue.FirstName + " entered in Chat")
+					}
+
+				} else {
+					// Update chat trivial messaging
+					log.Println("Bot Poller: Start updating. Updater come in.")
+					updater.Update(config.db, ID, username, firstname, lastname, int64(date), text) // TODO: make username translation
+				}
 			}
 
 		}

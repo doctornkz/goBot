@@ -22,7 +22,7 @@ func check(e error) {
 }
 
 // Update - update function about user activity
-func Update(db *sql.DB, ID int, UserName string, FirstName string, LastName string, Date int, Text string) {
+func Update(db *sql.DB, ID int, UserName string, FirstName string, LastName string, Date int64, Text string) {
 	// Select rows with ID
 	user := engine.GetUser(db, ID)
 
@@ -31,7 +31,8 @@ func Update(db *sql.DB, ID int, UserName string, FirstName string, LastName stri
 		user.UserName = UserName
 		user.FirstName = FirstName
 		user.LastName = LastName
-		user.NumMessages = -1
+		user.NumMessages = 0
+		user.Date = Date
 		engine.SetUser(db, user)
 		messagesUpdate(db, ID, Date, Text)
 
@@ -74,7 +75,7 @@ func insertWord(db *sql.DB, Word string, Date int) {
 }
 
 // MessagesUpdate - updater messages in chat
-func messagesUpdate(db *sql.DB, ID int, Date int, Text string) {
+func messagesUpdate(db *sql.DB, ID int, Date int64, Text string) {
 	log.Println("Updater: Messages insert section")
 	tx, err := db.Begin()
 	check(err)
