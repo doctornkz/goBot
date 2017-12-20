@@ -6,8 +6,17 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	//logger "github.com/doctornkz/goBot/logger"
 )
+
+// User structure, mirror of user table
+type User struct {
+	UserID      int
+	UserName    string
+	FirstName   string
+	LastName    string
+	NumMessages int
+	Date        int64 // Time of entering chat or leaving
+}
 
 func check(e error) {
 	if e != nil {
@@ -15,33 +24,66 @@ func check(e error) {
 	}
 }
 
-// IfUserExist check user valid in chat
-func IfUserExist(db *sql.DB, ID int) bool {
-	// Select rows with ID
-	sqlSelectQuery := "select count from num_messages where userid= ?"
+// SetUser - main user updater
+func SetUser(db *sql.DB, user *User) {
+	tx, err := db.Begin()
+	check(err)
+
+	sqlQueryUser := "insert or replace into user (userid, username, firstname, lastname, num_messages, date) values (?, ?, ?, ?, ?, ?)"
+
+	log.Printf("Engine: SQL Insert %s", sqlQueryUser)
+	insertUserState, err := tx.Prepare(sqlQueryUser)
+	check(err)
+	defer insertUserState.Close()
+	_, err = insertUserState.Exec(user.UserID, user.UserName, user.FirstName, user.LastName, user.NumMessages, user.Date)
+	check(err)
+
+	tx.Commit()
+}
+
+// GetUser - main function around user
+func GetUser(db *sql.DB, ID int) (user *User) {
+	sqlSelectQuery := "select username, firstname, lastname, num_messages, date from user where userid=?"
 	query, err := db.Prepare(sqlSelectQuery)
 	if err != nil {
-		log.Println("Engine: ifUserExist false on Prepare")
+		log.Println("Engine: GetUser failed on Prepare")
 		log.Fatal(err)
-		return false
 	}
 	defer query.Close()
-	// Query section
-	var count int
-	err = query.QueryRow(ID).Scan(&count)
+	var username string
+	var firstname string
+	var lastname string
+	var nummessages int
+	var date int64
+
+	err = query.QueryRow(ID).Scan(&username, &firstname, &lastname, &nummessages, &date)
 	if err != nil {
-		log.Println("Engine: ifUserExist false on Scan")
-		log.Println(err)
-		return false
+		log.Println("Engine: User is not exist")
+		return &User{
+			UserID:      ID,
+			UserName:    "",
+			FirstName:   "",
+			LastName:    "",
+			NumMessages: -1, //  -1:Left or non-existing user, 0:New user, 0+: Active user
+			Date:        time.Now().Unix(),
+		}
 	}
-	log.Println("Engine: ifUserExist true")
-	return true
+	log.Println("Engine: User exist")
+	return &User{
+		UserID:      ID,
+		UserName:    username,
+		FirstName:   firstname,
+		LastName:    lastname,
+		NumMessages: nummessages,
+		Date:        date,
+	}
 
 }
 
 // Status  - TOP20 in chat
 func Status(db *sql.DB, ID int) string {
-	rows, err := db.Query("select user.username, user.firstname, num_messages.userid, num_messages.count from user inner join num_messages on user.userid=num_messages.userid order by count desc")
+
+	rows, err := db.Query("select username, firstname, userid, num_messages from user order by num_messages desc;")
 	check(err)
 	defer rows.Close()
 
@@ -60,7 +102,6 @@ func Status(db *sql.DB, ID int) string {
 
 		check(err)
 		log.Println(strconv.Itoa(index), username, count)
-
 		if index <= limit {
 			output = output + strconv.Itoa(index) + ". " + username + " = " + count + "\r\n"
 		}
@@ -68,67 +109,86 @@ func Status(db *sql.DB, ID int) string {
 			output = output + "...\r\n" + strconv.Itoa(index) + ". " + username + " = " + count + "\r\n"
 		}
 		index++
-
 	}
-
 	err = rows.Err()
 	check(err)
-
 	return output
 }
 
 // Digest generator
 func Digest(db *sql.DB, historyhour int64) string {
 
-	now := time.Now().Unix()
-	period := now - historyhour*60*60
-	log.Println(period)
+	period := time.Now().Unix() - historyhour*60*60
+	// Select active users
+	userrows, err := db.Query("select distinct userid from messages where date>=?", period)
+	check(err)
+	defer userrows.Close()
 
-	///Date := time
-	rows, err := db.Query("select userid, text from messages where date>=?", period)
+	users := ""
+	for userrows.Next() {
+		var userid int
+		err = userrows.Scan(&userid)
+		username := GetUser(db, userid).UserName
+
+		if username == "" {
+			username = GetUser(db, userid).FirstName
+		}
+		if !strings.Contains(users, username) {
+			users += username + ", "
+		}
+		check(err)
+	}
+
+	// Select entered and left users
+	statusrows, err := db.Query("select distinct userid, num_messages from user where date>=? ", period)
+	check(err)
+	defer userrows.Close()
+
+	newusers := "New user(s): "
+	leftusers := "User(s) left: "
+	for statusrows.Next() {
+		var userid int
+		var nummessages int
+		err = statusrows.Scan(&userid, &nummessages)
+		username := GetUser(db, userid).UserName
+
+		if username == "" {
+			username = GetUser(db, userid).FirstName
+		}
+
+		if nummessages < 0 {
+			leftusers += username + ", "
+		} else {
+			newusers += username + ", "
+
+		}
+
+		check(err)
+	}
+
+	// Select tags
+	rows, err := db.Query("select text from messages where date>=?", period)
 	check(err)
 	defer rows.Close()
 
 	header := " -= DIGEST 12H =- \r\n"
-	cleanedMessage := ""
-	flooders := ""
+	cleanedMessage := "Buzz words: "
 	for rows.Next() {
 		var messages string
-		var userid int
-		err = rows.Scan(&userid, &messages)
+		err = rows.Scan(&messages)
 		for _, Word := range strings.Split(messages, " ") {
-			username := userid2Name(db, userid)
 			if !strings.Contains(cleanedMessage, Word) {
-				cleanedMessage += Word + " "
+				cleanedMessage += Word + ", "
 			}
-			if !strings.Contains(flooders, username) {
-				flooders += username + " "
-			}
+
 		}
 	}
 	check(err)
+	// TODO Re-think digest composer
+
 	if cleanedMessage != "" {
-		return header + cleanedMessage + "( " + flooders + ")"
-	}
-	return "Digest is empty "
-}
-
-func userid2Name(db *sql.DB, ID int) string {
-	// Select rows with ID
-	sqlSelectQuery := "select username, firstname from user where userid=?"
-	query, err := db.Prepare(sqlSelectQuery)
-	check(err)
-	defer query.Close()
-
-	// Query section
-	var username string
-	var firstname string
-	err = query.QueryRow(ID).Scan(&username, &firstname)
-	check(err)
-	if username != "" {
-		return username
+		return header + cleanedMessage + "( " + users + ")" + "\r\n" + newusers + "\r\n" + leftusers
 	}
 
-	return firstname
-
+	return "Digest is empty " + "\r\n" + newusers + "\r\n" + leftusers
 }
