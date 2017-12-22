@@ -3,7 +3,8 @@ node {
 
         echo 'Building....'
         checkout scm
-        ls -la
+        sh 'ls -la'
+
     }
     stage('Test') {
         echo 'Building....'
