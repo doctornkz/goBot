@@ -5,8 +5,11 @@ node {
         sh 'ls -la'
         sh 'cd docker'
         sh 'ls -la'
+        dir('docker'){
+            docker.build("doctornkz/gobot")
+    
+        }
         
-        docker.build("doctornkz/gobot")
     }
     stage('Test') {
         echo 'Building....'
