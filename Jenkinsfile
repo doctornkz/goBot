@@ -9,9 +9,10 @@ node {
         def code = pwd()
         def root = tool name: 'go1.6.2', type: 'go'
         withEnv(["GOROOT=${root}", "GOPATH=","PATH+GO=${root}/bin"]){
+        sh "ls -la ${code}"
+        sh "ls -la ${root}"
         sh 'go get github.com/tools/godep'
         sh 'pwd'
-        sh "ls -la ${code}"
         sh 'godep ./..'
         sh 'go build main.go'
 
