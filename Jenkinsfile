@@ -10,7 +10,7 @@ node {
         withEnv(["GOROOT=${root}", "PATH+GO=${root}/bin"]){
         sh 'go get github.com/tools/godep'
         sh 'pwd'
-        sh 'godep'
+        sh 'godep ./..'
         sh 'go build main.go'
 
         }
