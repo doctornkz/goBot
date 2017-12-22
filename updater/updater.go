@@ -79,37 +79,26 @@ func messagesUpdate(db *sql.DB, ID int, Date int64, Text string) {
 	log.Println("Updater: Messages insert section")
 	tx, err := db.Begin()
 	check(err)
+	for _, word := range strings.Split(Text, " ") {
+		word = strings.ToLower(word)
+		word = regexp.MustCompile(`[a-z]|[@$%&*~#=/_"!?. ,:;\-\\+1234567890(){}\[\]]`).ReplaceAllString(word, "") // Ugly but works
+		stemmed, err := snowball.Stem(word, "russian", true)
+		check(err)
+		if checkWord(db, stemmed) == 1 { // FIXME: Hardcoded category
+			sqlMessQuery := "insert into messages (userid, date, text) values (?, ?, ?)"
+			log.Printf("Updater: SQL Insert %s", sqlMessQuery)
 
-	cleanedMessage := ""
-	for _, Word := range strings.Split(Text, " ") {
-		if !strings.Contains(cleanedMessage, Word) {
-			if checkWord(db, stemming(Word)) == 1 { // FIXME: Hardcoded category
-				var re = regexp.MustCompile(`[a-z]|[@$%&*~#=/_"!?. ,:;\-\\+1234567890(){}\[\]]`)
-				Word = re.ReplaceAllString(Word, "")
+			updateMessageState, err := tx.Prepare(sqlMessQuery)
+			check(err)
+			defer updateMessageState.Close()
 
-				sqlMessQuery := "insert into messages (userid, date, text) values (?, ?, ?)"
-				log.Printf("Updater: SQL Insert %s", sqlMessQuery)
+			_, err = updateMessageState.Exec(ID, Date, word)
+			check(err)
 
-				updateMessageState, err := tx.Prepare(sqlMessQuery)
-				check(err)
-				defer updateMessageState.Close()
-
-				_, err = updateMessageState.Exec(ID, Date, Word)
-				check(err)
-
-				log.Println("Updater: Message committed")
-			}
+			log.Println("Updater: Message committed")
 		}
 	}
 	tx.Commit()
-	log.Printf("Updater: Phrase to save: %s", cleanedMessage)
+	log.Printf("Updater: Phrase saved")
 
-}
-
-func stemming(Word string) string {
-	var re = regexp.MustCompile(`[a-z]|[@$%&*~#=/_"!?. ,:;\-\\+1234567890(){}\[\]]`)
-	Word = re.ReplaceAllString(Word, "")
-	stemmed, err := snowball.Stem(Word, "russian", true)
-	check(err)
-	return stemmed
 }

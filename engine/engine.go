@@ -2,11 +2,23 @@ package engine
 
 import (
 	"database/sql"
+	"encoding/json"
 	"log"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/doctornkz/goBot/formatter"
 )
+
+// Message structure to formatter package
+type Message struct {
+	Header       string
+	Words        []string
+	Wordsauthors []string
+	Newusers     []string
+	Leftusers    []string
+}
 
 // User structure, mirror of user table
 type User struct {
@@ -124,6 +136,7 @@ func Digest(db *sql.DB, historyhour int64) string {
 	check(err)
 	defer userrows.Close()
 
+	wordsauthors := make([]string, 0, 10)
 	users := ""
 	for userrows.Next() {
 		var userid int
@@ -134,7 +147,8 @@ func Digest(db *sql.DB, historyhour int64) string {
 			username = GetUser(db, userid).FirstName
 		}
 		if !strings.Contains(users, username) {
-			users += username + ", "
+
+			wordsauthors = append(wordsauthors, username) // Slice with autors
 		}
 		check(err)
 	}
@@ -144,8 +158,10 @@ func Digest(db *sql.DB, historyhour int64) string {
 	check(err)
 	defer userrows.Close()
 
-	newusers := "New user(s): "
-	leftusers := "User(s) left: "
+	newusers := make([]string, 0, 10)
+	leftusers := make([]string, 0, 10)
+	//newusers := "New user(s): "
+	//leftusers := "User(s) left: "
 	for statusrows.Next() {
 		var userid int
 		var nummessages int
@@ -157,9 +173,9 @@ func Digest(db *sql.DB, historyhour int64) string {
 		}
 
 		if nummessages < 0 {
-			leftusers += username + ", "
+			leftusers = append(leftusers, username)
 		} else {
-			newusers += username + ", "
+			newusers = append(newusers, username)
 
 		}
 
@@ -171,24 +187,29 @@ func Digest(db *sql.DB, historyhour int64) string {
 	check(err)
 	defer rows.Close()
 
-	header := " -= DIGEST 12H =- \r\n"
-	cleanedMessage := "Buzz words: "
+	//header := " -= DIGEST 12H =- \r\n"
+	//cleanedMessage := "Buzz words: "
+	words := make([]string, 0, 20)
 	for rows.Next() {
 		var messages string
 		err = rows.Scan(&messages)
-		for _, Word := range strings.Split(messages, " ") {
-			if !strings.Contains(cleanedMessage, Word) {
-				cleanedMessage += Word + ", "
-			}
+		for _, word := range strings.Split(messages, " ") {
+			words = append(words, word)
 
 		}
 	}
 	check(err)
-	// TODO Re-think digest composer
 
-	if cleanedMessage != "" {
-		return header + cleanedMessage + "( " + users + ")" + "\r\n" + newusers + "\r\n" + leftusers
-	}
+	// Marshalizing
 
-	return "Digest is empty " + "\r\n" + newusers + "\r\n" + leftusers
+	message := &Message{
+		Header:       "-= DIGEST 12H =-",
+		Words:        words,
+		Wordsauthors: wordsauthors,
+		Newusers:     newusers,
+		Leftusers:    leftusers}
+	messageEncoded, _ := json.Marshal(message)
+	//fmt.Println(string(res1B))
+
+	return formatter.Formatter(messageEncoded)
 }
