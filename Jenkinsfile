@@ -4,7 +4,9 @@ node {
         checkout scm
         sh 'ls -la'
         sh 'cd docker'
-        docker.build("doctornkz:gobot")
+        sh 'ls -la'
+        
+        docker.build("doctornkz/gobot")
     }
     stage('Test') {
         echo 'Building....'
