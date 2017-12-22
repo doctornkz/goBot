@@ -1,7 +1,4 @@
 node {
-    agent {
-        dockerfile true
-    }
     stage('Build') {
         echo 'Building....'
         checkout scm
