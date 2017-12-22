@@ -4,6 +4,7 @@ node {
         checkout scm
     }
     stage('GoBuild') {
+        env.GOPATH = './'
         echo 'Go building....'
         sh 'go build main.go'
     }
