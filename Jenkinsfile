@@ -1,19 +1,25 @@
 node {
-    stage('Build') {
-        echo 'Building....'
+    stage('Checkout') {
+        echo 'Github checkout....'
         checkout scm
-        sh 'ls -la'
-        sh 'cd docker'
-        sh 'ls -la'
+    }
+    stage('GoBuild') {
+        echo 'Go building....'
+        sh 'go build main.go'
+    }
+
+    stage('DockerBuild'){
         dir('docker'){
             docker.build("doctornkz/gobot")
     
         }
-        
-    }
+
+    }   
+    
     stage('Test') {
         echo 'Building....'
     }
+
     stage('Deploy') {
         echo 'Deploying....'
     }
