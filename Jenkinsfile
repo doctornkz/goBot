@@ -7,10 +7,12 @@ node {
         def root = tool name: 'go1.6.2', type: 'go'
         withEnv(["GOROOT=${root}", "PATH+GO=${root}/bin"]){
         sh 'go version'
+        sh 'go build main.go'
         }
     }
 
     stage('DockerBuild'){
+        sh 'cp goBot docker'
         dir('docker'){
             docker.build("doctornkz/gobot")
     
