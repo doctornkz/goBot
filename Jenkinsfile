@@ -7,7 +7,7 @@ node {
         def root = tool name: 'go1.6.2', type: 'go'
         withEnv(["GOROOT=${root}", "GOPATH=${root}/bin"]){
         sh 'go install github.com/tools/godep'
-        
+        sh "ls -la"
         sh "ls -la ${root}/bin"
         sh 'godep help'
 
