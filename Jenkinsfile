@@ -7,7 +7,7 @@ node {
     }
     stage('GoBuild') {
         def root = tool name: 'go1.6.2', type: 'go'
-        withEnv(["PATH+GO=${root}/bin", "GOPATH=${root}"]){
+        withEnv(["GOROOT=${root}", "PATH+GO=${root}/bin"]){
         sh 'go get github.com/tools/godep'
         sh 'pwd'
         sh 'godep'
