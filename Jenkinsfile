@@ -1,5 +1,6 @@
 node {
     stage('Checkout') {
+        def coderoot = pwd()        
         echo 'Github checkout....'
         checkout scm
     }
@@ -7,7 +8,7 @@ node {
         def root = tool name: 'go1.6.2', type: 'go'
         withEnv(["PATH+GO=${root}", "GOPATH=${root}"]){
         sh 'go get github.com/tools/godep'
-        sh 'godep get  ./...'
+        sh "${root}/godep get ./..."
         sh 'go build main.go'
 
         }
