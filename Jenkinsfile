@@ -12,7 +12,7 @@ node {
             sh 'go version'
             sh 'go get -u github.com/golang/dep/...'
             sh 'dep init'
-            sh 'go build -o goBot .'
+            sh 'go build -o goBot docker'
         }
     stage ('Docker build'){
             
