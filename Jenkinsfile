@@ -10,7 +10,6 @@ node {
         def root = tool name: 'go1.6.2', type: 'go'
         withEnv(["GOROOT=${root}", "GOPATH=${code}", "PATH+GO=${root}/bin"]){
         sh 'go get github.com/tools/godep'
-        sh 'grep -r "\"github.com" | cut -d\" -f2 | xargs go get'
         sh 'go build main.go'
 
         }
