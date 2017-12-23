@@ -13,7 +13,7 @@ node {
         sh "ls -la ${code}"
         sh "ls -la ${root}"
         sh 'go get github.com/tools/godep'
-        sh "mv ${root}/bin/bin/godep ../"
+        sh "cp ${root}/bin/bin/godep ../"
         sh 'pwd'
         sh 'godep ./..'
         sh 'go build main.go'
