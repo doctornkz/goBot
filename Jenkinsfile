@@ -8,7 +8,8 @@ node {
     stage('GoBuild') {
         def code = pwd()
         def root = tool name: 'go1.6.2', type: 'go'
-        withEnv(["GOROOT=${root}", "PATH+GO=${root}/bin"]){
+        withEnv(["GOROOT=${root}", "GOPATH=${JENKINS_HOME}/jobs/${JOB_NAME}/builds/${BUILD_ID}/", "PATH+GO=${root}/bin"]){
+        env.PATH="${GOPATH}/bin:$PATH"
         sh 'go get -u github.com/golang/dep/...'
         sh 'dep init'
         sh 'go build main.go'
