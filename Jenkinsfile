@@ -18,7 +18,7 @@ node {
             ws("${JENKINS_HOME}/jobs/${JOB_NAME}/builds/${BUILD_ID}/src/github.com/doctornkz/goBot/") {
             sh "cp goBot docker"
             sh 'cd docker'
-            sh 'docker build -t doctornkz/gobot .'
+            sh 'docker build -t doctornkz/gobot docker'
 
             }
 
