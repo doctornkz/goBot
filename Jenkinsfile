@@ -13,12 +13,13 @@ node {
             sh 'go get -u github.com/golang/dep/...'
             sh 'dep init'
             sh 'go build -o goBot .'
+        }
     stage ('Docker build'){
             
             sh 'cp goBot docker'
             sh 'docker build -t doctornkz/gobot .'
 
-            
+
 
             // Do nothing.
             
