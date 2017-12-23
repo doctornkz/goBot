@@ -19,6 +19,7 @@ node {
             sh "cp goBot docker"
             sh 'cd docker'
             sh 'docker build -t doctornkz/gobot docker'
+            sh 'docker push -t doctornkz/gobot'
 
             }
 
