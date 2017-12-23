@@ -2,7 +2,7 @@ node {
 
     stage('Build'){
 
-    def root = tool name: 'go1.8', type: 'go'
+    def root = tool name: 'go1.6.2', type: 'go'
     ws("${JENKINS_HOME}/jobs/${JOB_NAME}/builds/${BUILD_ID}/src/github.com/doctornkz/goBot/") {
         
         withEnv(["GOROOT=${root}", "GOPATH=${JENKINS_HOME}/jobs/${JOB_NAME}/builds/${BUILD_ID}/", "PATH+GO=${root}/bin"]) {
@@ -14,7 +14,7 @@ node {
             sh 'dep init'
             sh 'go build -o goBot .'
             sh 'cp goBot docker'
-        
+
             }
             
             
