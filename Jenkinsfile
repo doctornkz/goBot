@@ -8,7 +8,7 @@ node {
     stage('GoBuild') {
         def code = pwd()
         def root = tool name: 'go1.6.2', type: 'go'
-        withEnv(["GOROOT=${root}","PATH+GO=${root}]){
+        withEnv(["GOROOT=${root}","PATH+GO=${root}"]){
         
         sh "ls -la ${code}"
         sh "ls -la ${root}"
