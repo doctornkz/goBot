@@ -17,6 +17,7 @@ node {
     stage ('Docker build'){
             
             sh 'cp goBot docker'
+            sh 'cd docker'
             sh 'docker build -t doctornkz/gobot .'
 
 
