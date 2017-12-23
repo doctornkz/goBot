@@ -8,7 +8,7 @@ node {
     stage('GoBuild') {
         def code = pwd()
         def root = tool name: 'go1.6.2', type: 'go'
-        withEnv(["GOROOT=${root}", "GOPATH=${root}","PATH+GO=${root}"]){
+        withEnv(["GOROOT=${root}", "GOPATH=${JENKINS_HOME}/jobs/${JOB_NAME}/builds/${BUILD_ID}/","PATH+GO=${root}"]){
         
         sh "ls -la ${code}"
         sh "ls -la ${root}"
