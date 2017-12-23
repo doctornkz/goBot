@@ -11,6 +11,7 @@ node {
         withEnv(["GOROOT=${root}", "GOPATH=${code}", "PATH+GO=${root}/bin"]){
         sh 'go get github.com/tools/godep'
         sh "${code}/bin/godep help"
+        sh "${code}/bin/godep save ${code}/..."
         sh 'go build main.go'
 
         }
