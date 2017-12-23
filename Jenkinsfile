@@ -13,9 +13,9 @@ node {
         sh "ls -la ${code}"
         sh "ls -la ${root}"
         sh 'go get github.com/tools/godep'
-        sh "cp ${root}/bin/bin/godep ${root}/bin/"
+        sh "mv ${root}/bin/bin/godep ${root}/bin/"
         sh 'pwd'
-        sh 'godep ./..'
+        sh 'godep save ./...'
         sh 'go build main.go'
 
         }
