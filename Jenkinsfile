@@ -20,6 +20,7 @@ node {
             sh 'cd docker'
             sh 'docker build -t doctornkz/gobot docker'
             }
+    }
         stage('Push image') {
         /* Finally, we'll push the image with two tags:
          * First, the incremental build number from Jenkins
