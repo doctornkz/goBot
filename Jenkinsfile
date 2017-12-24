@@ -18,8 +18,6 @@ node {
 
     stage ('Docker build'){
             ws("${JENKINS_HOME}/jobs/${JOB_NAME}/builds/${BUILD_ID}/src/github.com/doctornkz/goBot/docker") {
-            //sh "cp goBot docker"
-            //sh 'cd docker'
             sh 'docker build -t doctornkz/gobot .'
 
             def gobotImage = docker.build("doctornkz/gobot")
@@ -27,8 +25,6 @@ node {
                 gobotImage.push("latest")
         }
     }
-//            sh 'docker build -t doctornkz/gobot docker'
-//            sh 'docker push doctornkz/gobot'
             
 }
 }
