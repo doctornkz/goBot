@@ -13,7 +13,8 @@ node {
             sh 'go get -u github.com/golang/dep/...'
             sh 'dep init'
             sh 'go build -o goBot '
-        }}
+        }}}
+
     stage ('Docker build'){
             ws("${JENKINS_HOME}/jobs/${JOB_NAME}/builds/${BUILD_ID}/src/github.com/doctornkz/goBot/") {
             sh "cp goBot docker"
@@ -26,7 +27,4 @@ node {
 //            sh 'docker build -t doctornkz/gobot docker'
 //            sh 'docker push doctornkz/gobot'
             
-            }
-        
-    }
 }
