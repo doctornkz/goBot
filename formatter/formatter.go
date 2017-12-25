@@ -2,6 +2,7 @@ package formatter
 
 import (
 	"encoding/json"
+	"fmt"
 	"regexp"
 	"sort"
 	"strings"
@@ -40,6 +41,7 @@ func Formatter(messageEncoded []byte) string {
 	//log.Println("---")
 	words := (message.Words)
 	wordsauthors := strings.Join(message.Wordsauthors, ", ")
+	wordsauthors = fmt.Printf("%-20s", wordsauthors)
 	newusers := strings.Join(message.Newusers, ", ")
 	leftusers := strings.Join(message.Leftusers, ", ")
 	simplified := strings.Join(wordsSimplifier(words), ", ")
