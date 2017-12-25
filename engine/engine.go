@@ -3,7 +3,6 @@ package engine
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"log"
 	"strconv"
 	"strings"
@@ -112,7 +111,7 @@ func Status(db *sql.DB, ID int) string {
 		if username == "" {
 			username = firstname
 		}
-		username = fmt.Printf("%-20s", username)
+
 		check(err)
 		log.Println(strconv.Itoa(index), username, count)
 		if index <= limit {
