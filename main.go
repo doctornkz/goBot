@@ -137,7 +137,7 @@ func main() {
 				case "status":
 					msg.Text = engine.Status(config.db, ID) // TODO Make limit
 				default:
-					msg.Text = "I don't know that command"
+					continue
 				}
 				bot.Send(msg)
 			} else {
