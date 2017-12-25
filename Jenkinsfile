@@ -16,7 +16,7 @@ node {
             sh 'cp goBot docker'
         }}}
 
-    stage ('Docker build'){
+    stage('Docker build'){
             ws("${JENKINS_HOME}/jobs/${JOB_NAME}/builds/${BUILD_ID}/src/github.com/doctornkz/goBot/docker") {
             sh 'docker build -t doctornkz/gobot .'
 
