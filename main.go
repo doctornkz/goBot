@@ -109,7 +109,6 @@ func main() {
 			}
 			ID := update.Message.From.ID
 			user := engine.GetUser(config.db, ID)
-
 			username := update.Message.From.UserName
 			firstname := update.Message.From.FirstName
 			lastname := update.Message.From.LastName
@@ -124,18 +123,19 @@ func main() {
 				continue
 			}
 			// Command messages
-
 			if update.Message.IsCommand() && user.NumMessages > 0 {
 				msg := tgbotapi.NewMessage(config.chatID, "")
+
 				switch update.Message.Command() {
 				case "help":
 					msg.Text = "type /sayhi, /digest12h or /status."
 				case "sayhi":
 					msg.Text = "Hi :)"
 				case "digest12h":
+					msg.ParseMode = "Markdown"              // Markdown works only for Digest, may be bug
 					msg.Text = engine.Digest(config.db, 12) // To do hours and ID
 				case "status":
-					msg.Text = engine.Status(config.db, ID) // TODO Make limit
+					msg.Text = engine.Status(config.db, ID) // Make limit (1..20, all)
 				default:
 					continue
 				}

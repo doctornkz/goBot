@@ -11,13 +11,24 @@ import (
 	"github.com/doctornkz/goBot/formatter"
 )
 
-// Message structure to formatter package
-type Message struct {
+const (
+	limitRow  int = 20 // Limit of rows in Top list
+	limitChar int = 13 // Limit of characters in Username
+)
+
+// DigestMessage structure to formatter package
+type DigestMessage struct {
 	Header       string
 	Words        []string
 	Wordsauthors []string
 	Newusers     []string
 	Leftusers    []string
+}
+
+// StatusMessage structure to formatter package
+type StatusMessage struct {
+	Header  string
+	TopList string
 }
 
 // User structure, mirror of user table
@@ -108,10 +119,8 @@ func Status(db *sql.DB, ID int) string {
 	rows, err := db.Query("select username, firstname, userid, num_messages from user order by num_messages desc;")
 	check(err)
 	defer rows.Close()
-
-	output := " -= TOP LIST =- \r\n"
+	output := ""
 	index := 1
-	limit := 20
 	for rows.Next() { // Generating TOP 20
 		var username string
 		var firstname string
@@ -122,26 +131,34 @@ func Status(db *sql.DB, ID int) string {
 			username = firstname
 		}
 
+		username = shorter(username, limitChar)
 		check(err)
 		log.Println(strconv.Itoa(index), username, count)
 
-		if index <= limit {
-			output = output + strconv.Itoa(index) + ". " + shorter(username, 13) + " = " + count + "\r\n"
+		if index <= limitRow {
+			output = output + strconv.Itoa(index) + ". " + username + " = " + count + "\r\n"
 		}
-		if (ID == userid) && (index > limit) {
-			output = output + "...\r\n" + strconv.Itoa(index) + ". " + shorter(username, 13) + " = " + count + "\r\n"
+		if (ID == userid) && (index > limitRow) {
+			output = output + "...\r\n" + strconv.Itoa(index) + ". " + username + " = " + count + "\r\n"
 		}
 		index++
 	}
 	err = rows.Err()
 	check(err)
-	return output
+
+	message := &StatusMessage{
+		Header:  "-=TOP LIST=-",
+		TopList: output}
+	messageEncoded, _ := json.Marshal(message)
+	return formatter.StatusFormatter(messageEncoded)
+
 }
 
 // Digest generator
 func Digest(db *sql.DB, historyhour int64) string {
 
 	period := time.Now().Unix() - historyhour*60*60
+
 	// Select active users
 	userrows, err := db.Query("select distinct userid from messages where date>=?", period)
 	check(err)
@@ -158,7 +175,6 @@ func Digest(db *sql.DB, historyhour int64) string {
 			username = GetUser(db, userid).FirstName
 		}
 		if !strings.Contains(users, username) {
-
 			wordsauthors = append(wordsauthors, username) // Slice with autors
 		}
 		check(err)
@@ -171,8 +187,6 @@ func Digest(db *sql.DB, historyhour int64) string {
 
 	newusers := make([]string, 0, 10)
 	leftusers := make([]string, 0, 10)
-	//newusers := "New user(s): "
-	//leftusers := "User(s) left: "
 	for statusrows.Next() {
 		var userid int
 		var nummessages int
@@ -187,9 +201,7 @@ func Digest(db *sql.DB, historyhour int64) string {
 			leftusers = append(leftusers, username)
 		} else {
 			newusers = append(newusers, username)
-
 		}
-
 		check(err)
 	}
 
@@ -197,9 +209,6 @@ func Digest(db *sql.DB, historyhour int64) string {
 	rows, err := db.Query("select text from messages where date>=?", period)
 	check(err)
 	defer rows.Close()
-
-	//header := " -= DIGEST 12H =- \r\n"
-	//cleanedMessage := "Buzz words: "
 	words := make([]string, 0, 20)
 	for rows.Next() {
 		var messages string
@@ -212,15 +221,12 @@ func Digest(db *sql.DB, historyhour int64) string {
 	check(err)
 
 	// Marshalizing
-
-	message := &Message{
-		Header:       "-= DIGEST 12H =-",
+	message := &DigestMessage{
+		Header:       "*-= DIGEST 12H =-*",
 		Words:        words,
 		Wordsauthors: wordsauthors,
 		Newusers:     newusers,
 		Leftusers:    leftusers}
 	messageEncoded, _ := json.Marshal(message)
-	//fmt.Println(string(res1B))
-
-	return formatter.Formatter(messageEncoded)
+	return formatter.DigestFormatter(messageEncoded)
 }

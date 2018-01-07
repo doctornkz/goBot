@@ -9,13 +9,19 @@ import (
 	"github.com/kljensen/snowball"
 )
 
-// Message struct
-type Message struct {
+// DigestMessage struct
+type DigestMessage struct {
 	Header       string
 	Words        []string
 	Wordsauthors []string
 	Newusers     []string
 	Leftusers    []string
+}
+
+// StatusMessage structure to formatter package
+type StatusMessage struct {
+	Header  string
+	TopList string
 }
 
 func check(e error) {
@@ -26,24 +32,52 @@ func check(e error) {
 
 var messageDecoded map[string]interface{}
 
-// Formatter function
-func Formatter(messageEncoded []byte) string {
+// DigestFormatter function
+func DigestFormatter(messageEncoded []byte) string {
 
 	if err := json.Unmarshal(messageEncoded, &messageDecoded); err != nil {
 		panic(err)
 	}
 
-	message := Message{}
+	message := DigestMessage{}
 	json.Unmarshal(messageEncoded, &message)
 
 	header := message.Header
-	//log.Println("---")
-	words := (message.Words)
-	wordsauthors := strings.Join(message.Wordsauthors, ", ")
-	newusers := strings.Join(message.Newusers, ", ")
-	leftusers := strings.Join(message.Leftusers, ", ")
-	simplified := strings.Join(wordsSimplifier(words), ", ")
-	return header + "\r\n" + "BUZZWORDS: " + simplified + "\r\n" + "AUTHORS: " + wordsauthors + "\r\n" + "NEW USERS: " + newusers + "\r\n" + "LEFT USERS: " + leftusers
+
+	newusers, leftusers, wordsauthors, simplified := "", "", "", ""
+
+	if len(message.Words) != 0 {
+		words := message.Words
+		simplified = "*buzzwords:* " + strings.Join(wordsSimplifier(words), ", ")
+		wordsauthors = "*authors:* " + strings.Join(message.Wordsauthors, ", ")
+	} else {
+		simplified = " Nothing there"
+	}
+
+	if len(message.Newusers) != 0 {
+		newusers = "*new users:* " + strings.Join(message.Newusers, ", ")
+	}
+
+	if len(message.Leftusers) != 0 {
+		newusers = "*left users:* " + strings.Join(message.Leftusers, ", ")
+	}
+
+	return header + "\r\n" + simplified + "\r\n" + wordsauthors + "\r\n" + newusers + "\r\n" + leftusers
+}
+
+// StatusFormatter formatter for Status
+func StatusFormatter(messageEncoded []byte) string {
+
+	if err := json.Unmarshal(messageEncoded, &messageDecoded); err != nil {
+		panic(err)
+	}
+
+	message := StatusMessage{}
+	json.Unmarshal(messageEncoded, &message)
+
+	header := message.Header
+	toplist := message.TopList
+	return header + "\r\n" + toplist
 }
 
 func wordsSimplifier(words []string) []string {
