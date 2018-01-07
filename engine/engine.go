@@ -36,6 +36,16 @@ func check(e error) {
 	}
 }
 
+func shorter(username string, limit int) string {
+	usernameSlice := strings.Split(username, "")
+	if len(usernameSlice) < limit {
+		return username
+	}
+
+	return strings.Join(usernameSlice[:limit], "") + "..."
+
+}
+
 // SetUser - main user updater
 func SetUser(db *sql.DB, user *User) {
 	tx, err := db.Begin()
@@ -114,11 +124,12 @@ func Status(db *sql.DB, ID int) string {
 
 		check(err)
 		log.Println(strconv.Itoa(index), username, count)
+
 		if index <= limit {
-			output = output + strconv.Itoa(index) + ". " + username + " = " + count + "\r\n"
+			output = output + strconv.Itoa(index) + ". " + shorter(username, 13) + " = " + count + "\r\n"
 		}
 		if (ID == userid) && (index > limit) {
-			output = output + "...\r\n" + strconv.Itoa(index) + ". " + username + " = " + count + "\r\n"
+			output = output + "...\r\n" + strconv.Itoa(index) + ". " + shorter(username, 13) + " = " + count + "\r\n"
 		}
 		index++
 	}
