@@ -3,12 +3,12 @@ package engine
 import (
 	"database/sql"
 	"encoding/json"
-	"log"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/doctornkz/goBot/formatter"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -43,7 +43,7 @@ type User struct {
 
 func check(e error) {
 	if e != nil {
-		panic(e)
+		log.Error(e)
 	}
 }
 
@@ -80,7 +80,7 @@ func GetUser(db *sql.DB, ID int) (user *User) {
 	query, err := db.Prepare(sqlSelectQuery)
 	if err != nil {
 		log.Println("Engine: GetUser failed on Prepare")
-		log.Fatal(err)
+		log.Error(err)
 	}
 	defer query.Close()
 	var username string
@@ -156,7 +156,6 @@ func Status(db *sql.DB, ID int) string {
 
 // Digest generator
 func Digest(db *sql.DB, historyhour int64) string {
-
 	period := time.Now().Unix() - historyhour*60*60
 
 	// Select active users

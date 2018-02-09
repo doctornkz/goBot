@@ -12,3 +12,6 @@ goBot
 empty\.db
 
 exyandex\.db
+
+tests/test.go
+

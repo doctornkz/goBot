@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/kljensen/snowball"
+	log "github.com/sirupsen/logrus"
 )
 
 // DigestMessage struct
@@ -26,7 +27,7 @@ type StatusMessage struct {
 
 func check(e error) {
 	if e != nil {
-		panic(e)
+		log.Error(e)
 	}
 }
 
@@ -36,7 +37,7 @@ var messageDecoded map[string]interface{}
 func DigestFormatter(messageEncoded []byte) string {
 
 	if err := json.Unmarshal(messageEncoded, &messageDecoded); err != nil {
-		panic(err)
+		check(err)
 	}
 
 	message := DigestMessage{}
@@ -69,7 +70,7 @@ func DigestFormatter(messageEncoded []byte) string {
 func StatusFormatter(messageEncoded []byte) string {
 
 	if err := json.Unmarshal(messageEncoded, &messageDecoded); err != nil {
-		panic(err)
+		check(err)
 	}
 
 	message := StatusMessage{}

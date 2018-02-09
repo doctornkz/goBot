@@ -2,7 +2,9 @@ package updater
 
 import (
 	"database/sql"
-	"log"
+
+	log "github.com/sirupsen/logrus"
+
 	"regexp"
 	"strings"
 
@@ -17,7 +19,7 @@ import (
 
 func check(e error) {
 	if e != nil {
-		panic(e)
+		log.Error(e)
 	}
 }
 
@@ -94,7 +96,6 @@ func messagesUpdate(db *sql.DB, ID int, Date int64, Text string) {
 
 			_, err = updateMessageState.Exec(ID, Date, word)
 			check(err)
-
 			log.Println("Updater: Message committed")
 		}
 	}

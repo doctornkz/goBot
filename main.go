@@ -3,7 +3,6 @@ package main
 import (
 	"database/sql"
 	"flag"
-	"log"
 	"time"
 
 	"github.com/asjustas/goini"
@@ -11,6 +10,7 @@ import (
 	"github.com/doctornkz/goBot/updater"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	_ "github.com/mattn/go-sqlite3"
+	log "github.com/sirupsen/logrus"
 )
 
 var config = struct {
@@ -51,7 +51,6 @@ func init() {
 
 	conf, err := goini.Load(config.dir + config.config)
 	if err != nil {
-
 		log.Printf("Bot poller: Config %s not found, go CLI mode", config.dir+config.config)
 	}
 
@@ -84,6 +83,12 @@ func init() {
 	}
 }
 
+func check(e error) {
+	if e != nil {
+		log.Error(e)
+	}
+}
+
 func main() {
 
 	bot, err := tgbotapi.NewBotAPI(config.apiKey)
@@ -100,6 +105,7 @@ func main() {
 	u.Timeout = 60
 
 	updates, err := bot.GetUpdatesChan(u)
+	check(err)
 	for {
 		log.Println("Bot poller: Pre-update section")
 		select {
