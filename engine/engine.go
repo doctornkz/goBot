@@ -157,7 +157,6 @@ func Status(db *sql.DB, ID int) string {
 // Digest generator
 func Digest(db *sql.DB, historyhour int64) string {
 	period := time.Now().Unix() - historyhour*60*60
-
 	// Select active users
 	userrows, err := db.Query("select distinct userid from messages where date>=?", period)
 	check(err)
@@ -218,6 +217,8 @@ func Digest(db *sql.DB, historyhour int64) string {
 		}
 	}
 	check(err)
+	log.Printf("Engine: Number of authors: %d", len(wordsauthors))
+	log.Printf("Number of words: %d", len(words))
 
 	// Marshalizing
 	message := &DigestMessage{
