@@ -145,7 +145,9 @@ func main() {
 				default:
 					continue
 				}
-				bot.Send(msg)
+				_, err := bot.Send(msg)
+				check(err)
+
 			} else {
 				log.Printf("Bot poller: [%s] (ID: %d) %d %s", username, ID, config.chatID, text)
 				// Check new and left users:  // TODO: Lots the duplicates, replace to function?

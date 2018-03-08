@@ -209,13 +209,15 @@ func Digest(db *sql.DB, historyhour int64) string {
 	defer rows.Close()
 	words := make([]string, 0, 20)
 	for rows.Next() {
-		var messages string
-		err = rows.Scan(&messages)
-		for _, word := range strings.Split(messages, " ") {
-			words = append(words, word)
-
+		if len(words) <= 50 { // Message limit
+			var messages string
+			err = rows.Scan(&messages)
+			for _, word := range strings.Split(messages, " ") {
+				words = append(words, word)
+			}
 		}
 	}
+
 	check(err)
 	log.Printf("Engine: Number of authors: %d", len(wordsauthors))
 	log.Printf("Number of words: %d", len(words))
