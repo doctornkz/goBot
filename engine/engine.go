@@ -221,6 +221,10 @@ func Digest(db *sql.DB, historyhour int64) string {
 	check(err)
 	log.Printf("Engine: Number of authors: %d", len(wordsauthors))
 	log.Printf("Number of words: %d", len(words))
+	log.Printf("Digest, words: %v", words)
+	log.Printf("Digest, wordsauthors: %v", wordsauthors)
+	log.Printf("Digest, newusers: %v", newusers)
+	log.Printf("Digest, leftusers: %v", leftusers)
 
 	// Marshalizing
 	message := &DigestMessage{
