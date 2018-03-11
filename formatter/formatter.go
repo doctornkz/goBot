@@ -49,18 +49,18 @@ func DigestFormatter(messageEncoded []byte) string {
 
 	if len(message.Words) != 0 {
 		words := message.Words
-		simplified = "*buzzwords:* " + strings.Join(wordsSimplifier(words), ", ")
-		wordsauthors = "*authors:* " + strings.Join(message.Wordsauthors, ", ")
+		simplified = "buzzwords: " + strings.Join(wordsSimplifier(words), ", ")
+		wordsauthors = "authors: " + strings.Join(message.Wordsauthors, ", ")
 	} else {
 		simplified = " Nothing there"
 	}
 
 	if len(message.Newusers) != 0 {
-		newusers = "*new users:* " + strings.Join(message.Newusers, ", ")
+		newusers = "new users: " + strings.Join(message.Newusers, ", ")
 	}
 
 	if len(message.Leftusers) != 0 {
-		newusers = "*left users:* " + strings.Join(message.Leftusers, ", ")
+		newusers = "left users: " + strings.Join(message.Leftusers, ", ")
 	}
 
 	return header + "\r\n" + simplified + "\r\n" + wordsauthors + "\r\n" + newusers + "\r\n" + leftusers
