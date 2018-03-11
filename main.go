@@ -138,7 +138,10 @@ func main() {
 				case "sayhi":
 					msg.Text = "Hi :)"
 				case "digest12h":
-					msg.ParseMode = "Markdown"              // Markdown works only for Digest, may be bug
+					// msg.ParseMode = "Markdown"              // Markdown works only for Digest, may be bug
+					// Markdown removed, generates error:
+					// Bad Request: can't parse entities: Can't find end of the entity starting at byte offset 695
+
 					msg.Text = engine.Digest(config.db, 12) // To do hours and ID
 				case "status":
 					msg.Text = engine.Status(config.db, ID) // Make limit (1..20, all)
