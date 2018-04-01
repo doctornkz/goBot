@@ -1,5 +1,7 @@
 package main
 
+//  Just demonstration
+
 import (
 	"database/sql"
 	"flag"
