@@ -228,7 +228,7 @@ func Digest(db *sql.DB, historyhour int64) string {
 
 	// Marshalizing
 	message := &DigestMessage{
-		Header:       "*-= DIGEST 12H =-*",
+		Header:       "-= DIGEST 12H =-",
 		Words:        words,
 		Wordsauthors: wordsauthors,
 		Newusers:     newusers,
