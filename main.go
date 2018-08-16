@@ -5,6 +5,7 @@ package main
 import (
 	"database/sql"
 	"flag"
+	"strconv"
 	"time"
 
 	"github.com/asjustas/goini"
@@ -13,6 +14,11 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	_ "github.com/mattn/go-sqlite3"
 	log "github.com/sirupsen/logrus"
+)
+
+var (
+	ada            updater.AdaConfig
+	adaFruitEnable bool
 )
 
 var config = struct {
@@ -24,12 +30,6 @@ var config = struct {
 	apiKey   string
 	chatID   int64
 	logfile  string
-	// TODO: Push that in config file!
-	adafruitHost  string
-	adafruitPort  string
-	adafruitUser  string
-	adafruitToken string
-	adaFruitTopic string
 }{
 	dbName:   "./empty.db",
 	dbDriver: "sqlite3",
@@ -38,12 +38,6 @@ var config = struct {
 	apiKey:   "",
 	chatID:   0,
 	logfile:  "./gobot.log",
-	// TODO: Push that in config file!
-	adafruitHost:  "",
-	adafruitPort:  "",
-	adafruitUser:  "",
-	adafruitToken: "",
-	adaFruitTopic: "",
 }
 
 func init() {
@@ -70,23 +64,21 @@ func init() {
 	config.dbDriver = *dbDriverPtr
 	config.chatID = *chatIDPtr
 	// AdaFruit parameters initialize :
-	config.adafruitHost = *adafruitHost
-	config.adafruitPort = *adafruitPort
-	config.adafruitUser = *adafruitUser
-	config.adafruitToken = *adafruitToken
-	config.adaFruitTopic = *adafruitTopic
-	
-	
+
+	ada.AdafruitHost = *adafruitHost
+	ada.AdafruitPort = *adafruitPort
+	ada.AdafruitUser = *adafruitUser
+	ada.AdafruitToken = *adafruitToken
+	ada.AdaFruitTopic = *adafruitTopic
+
 	// TODO: Use switch/select Luke! :
-	if (config.adafruitHost =="" || config.adafruitPort = "" || config.adafruitUser = "" ||	config.adafruitToken = "" || config.adaFruitTopic = ""){
-		log.Printf("Configuration: Config for AdaFruit found, username %s setting...", config.adafruitUser)
-		var adaFruitEnable = true
+	if ada.AdafruitHost == "" || ada.AdafruitPort == "" || ada.AdafruitUser == "" || ada.AdafruitToken == "" || ada.AdaFruitTopic == "" {
+		log.Printf("Configuration: Config for AdaFruit found, username %s setting...", ada.AdafruitUser)
+		adaFruitEnable = true
 	} else {
 		log.Printf("Configuration: Config for AdaFruit not found, skipping...")
-		var adaFruitEnable = false
+		adaFruitEnable = false
 	}
-
-
 
 	conf, err := goini.Load(config.dir + config.config)
 	if err != nil {
@@ -141,6 +133,8 @@ func main() {
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 
+	var chatConfig tgbotapi.ChatConfig
+	chatConfig.ChatID = config.chatID
 	updates, err := bot.GetUpdatesChan(u)
 	check(err)
 	for {
@@ -192,7 +186,13 @@ func main() {
 				log.Printf("Bot poller: [%s] (ID: %d) %d %s", username, ID, config.chatID, text)
 				// Check new and left users:  // TODO: Lots the duplicates, replace to function?
 				if leftuser != nil {
-					
+					if adaFruitEnable {
+						count, err := bot.GetChatMembersCount(chatConfig)
+						check(err)
+						ada.AdaFruitMessage = strconv.Itoa(count)
+						updater.ExportStats(ada)
+					}
+
 					user := engine.GetUser(config.db, leftuser.ID)
 					user.UserID = leftuser.ID
 					user.UserName = leftuser.UserName
@@ -204,6 +204,13 @@ func main() {
 					log.Println("Bot Poller: User " + leftuser.FirstName + " go out from Chat")
 
 				} else if newuser != nil {
+					if adaFruitEnable {
+						count, err := bot.GetChatMembersCount(chatConfig)
+						check(err)
+						ada.AdaFruitMessage = strconv.Itoa(count)
+						updater.ExportStats(ada)
+					}
+
 					for _, newuservalue := range *newuser {
 						user := engine.GetUser(config.db, newuservalue.ID)
 						user.UserID = newuservalue.ID
