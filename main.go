@@ -190,7 +190,7 @@ func main() {
 						count, err := bot.GetChatMembersCount(chatConfig)
 						check(err)
 						ada.AdaFruitMessage = strconv.Itoa(count)
-						updater.ExportStats(ada)
+						//updater.ExportStats(ada)
 					}
 
 					user := engine.GetUser(config.db, leftuser.ID)
@@ -208,7 +208,7 @@ func main() {
 						count, err := bot.GetChatMembersCount(chatConfig)
 						check(err)
 						ada.AdaFruitMessage = strconv.Itoa(count)
-						updater.ExportStats(ada)
+						//updater.ExportStats(ada)
 					}
 
 					for _, newuservalue := range *newuser {
