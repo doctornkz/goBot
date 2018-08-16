@@ -24,6 +24,12 @@ var config = struct {
 	apiKey   string
 	chatID   int64
 	logfile  string
+	// TODO: Push that in config file!
+	adafruitHost  string
+	adafruitPort  string
+	adafruitUser  string
+	adafruitToken string
+	adaFruitTopic string
 }{
 	dbName:   "./empty.db",
 	dbDriver: "sqlite3",
@@ -32,6 +38,12 @@ var config = struct {
 	apiKey:   "",
 	chatID:   0,
 	logfile:  "./gobot.log",
+	// TODO: Push that in config file!
+	adafruitHost:  "",
+	adafruitPort:  "",
+	adafruitUser:  "",
+	adafruitToken: "",
+	adaFruitTopic: "",
 }
 
 func init() {
@@ -39,8 +51,15 @@ func init() {
 	confPtr := flag.String("c", "settings.ini", "default config file. See settings.ini.example")
 	apiKeyPtr := flag.String("apikey", "", "Bot ApiKey. See @BotFather messages for details")
 	chatIDPtr := flag.Int64("chat", 0, "Chat uniq ID")
+	// Sqlite DB Configuration:
 	dbNamePtr := flag.String("dbname", "", "Database of users")
 	dbDriverPtr := flag.String("dbdriver", "sqlite3", "Driver DB.")
+	// AdaFruit Configuration:
+	adafruitHost := flag.String("adahost", "", "AdaFruit host (graphic service)")
+	adafruitPort := flag.String("adaport", "", "Port of AdaFruit collector")
+	adafruitUser := flag.String("adauser", "", "Username for AdaFruit autorization")
+	adafruitToken := flag.String("adatoken", "", "API token for AdaFruit autorization")
+	adafruitTopic := flag.String("adatopic", "", "AdaFruit topic")
 
 	flag.Parse()
 
@@ -50,13 +69,30 @@ func init() {
 	config.dbName = *dbNamePtr
 	config.dbDriver = *dbDriverPtr
 	config.chatID = *chatIDPtr
+	// AdaFruit parameters initialize :
+	config.adafruitHost = *adafruitHost
+	config.adafruitPort = *adafruitPort
+	config.adafruitUser = *adafruitUser
+	config.adafruitToken = *adafruitToken
+	config.adaFruitTopic = *adafruitTopic
+	
+	
+	// TODO: Use switch/select Luke! :
+	if (config.adafruitHost =="" || config.adafruitPort = "" || config.adafruitUser = "" ||	config.adafruitToken = "" || config.adaFruitTopic = ""){
+		log.Printf("Configuration: Config for AdaFruit found, username %s setting...", config.adafruitUser)
+		var adaFruitEnable = true
+	} else {
+		log.Printf("Configuration: Config for AdaFruit not found, skipping...")
+		var adaFruitEnable = false
+	}
+
+
 
 	conf, err := goini.Load(config.dir + config.config)
 	if err != nil {
 		log.Printf("Bot poller: Config %s not found, go CLI mode", config.dir+config.config)
 	}
 
-	//dbNameString := dbName
 	if config.dbName == "" {
 		config.dbName = conf.Str("main", "SQLITE_DB")
 		if config.dbName == "" {
@@ -65,7 +101,6 @@ func init() {
 		}
 	}
 
-	//apiString := apiKey
 	if config.apiKey == "" {
 		config.apiKey = conf.Str("main", "ApiKey")
 		if config.apiKey == "" {
@@ -157,6 +192,7 @@ func main() {
 				log.Printf("Bot poller: [%s] (ID: %d) %d %s", username, ID, config.chatID, text)
 				// Check new and left users:  // TODO: Lots the duplicates, replace to function?
 				if leftuser != nil {
+					
 					user := engine.GetUser(config.db, leftuser.ID)
 					user.UserID = leftuser.ID
 					user.UserName = leftuser.UserName
