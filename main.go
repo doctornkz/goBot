@@ -119,7 +119,11 @@ func check(e error) {
 }
 
 func main() {
+	// AdaFruit channel init
+	adaChanMessage := make(chan string)
+	go updater.ExportStats(ada, adaChanMessage)
 
+	// Telegram init
 	bot, err := tgbotapi.NewBotAPI(config.apiKey)
 	if err != nil {
 		log.Printf("Bot poller: Something wrong with your key, %s", config.apiKey)
@@ -189,8 +193,7 @@ func main() {
 					if adaFruitEnable {
 						count, err := bot.GetChatMembersCount(chatConfig)
 						check(err)
-						ada.AdaFruitMessage = strconv.Itoa(count)
-						//updater.ExportStats(ada)
+						adaChanMessage <- strconv.Itoa(count)
 					}
 
 					user := engine.GetUser(config.db, leftuser.ID)
@@ -207,8 +210,7 @@ func main() {
 					if adaFruitEnable {
 						count, err := bot.GetChatMembersCount(chatConfig)
 						check(err)
-						ada.AdaFruitMessage = strconv.Itoa(count)
-						//updater.ExportStats(ada)
+						adaChanMessage <- strconv.Itoa(count)
 					}
 
 					for _, newuservalue := range *newuser {
