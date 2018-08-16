@@ -73,11 +73,11 @@ func init() {
 
 	// TODO: Use switch/select Luke! :
 	if ada.AdafruitHost == "" || ada.AdafruitPort == "" || ada.AdafruitUser == "" || ada.AdafruitToken == "" || ada.AdaFruitTopic == "" {
-		log.Printf("Configuration: Config for AdaFruit found, username %s setting...", ada.AdafruitUser)
-		adaFruitEnable = true
-	} else {
 		log.Printf("Configuration: Config for AdaFruit not found, skipping...")
 		adaFruitEnable = false
+	} else {
+		log.Printf("Configuration: Config for AdaFruit found, username %s setting...", ada.AdafruitUser)
+		adaFruitEnable = true
 	}
 
 	conf, err := goini.Load(config.dir + config.config)
