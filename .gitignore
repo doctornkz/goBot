@@ -15,3 +15,5 @@ exyandex\.db
 
 tests/test.go
 
+docker/goBot
+
