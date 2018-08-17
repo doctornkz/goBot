@@ -9,7 +9,7 @@ node {
             sh 'go version'
             sh 'go get -u github.com/golang/dep/...'
             sh 'dep init'
-            sh 'go build -o goBot '
+            sh 'go build -ldflags "-X main.currentVersion=`date -u +.%Y%m%d.%H%M%S`" -o goBot '
             sh 'cp goBot docker'
         }}}
 

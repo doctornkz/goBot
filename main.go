@@ -19,6 +19,7 @@ import (
 var (
 	ada            updater.AdaConfig
 	adaFruitEnable bool
+	currentVersion string
 )
 
 var config = struct {
@@ -172,6 +173,8 @@ func main() {
 					msg.Text = "type /sayhi, /digest12h or /status."
 				case "sayhi":
 					msg.Text = "Hi :)"
+				case "version":
+					msg.Text = "GoBot," + currentVersion + ", gh:doctornkz:goBot."
 				case "digest12h":
 					// msg.ParseMode = "Markdown"              // Markdown works only for Digest, may be bug
 					// Markdown removed, generates error:
