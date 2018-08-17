@@ -47,6 +47,19 @@ func ExportStats(ada AdaConfig, ch <-chan string) {
 		select {
 		case message := <-ch:
 			log.Printf("Catch the message, %s", message)
+			err := cli.Connect(&client.ConnectOptions{
+				Network:      "tcp",
+				Address:      ada.AdafruitHost + ":" + ada.AdafruitPort,
+				UserName:     []byte(ada.AdafruitUser),
+				Password:     []byte(ada.AdafruitToken),
+				CleanSession: true,
+			})
+			if err != nil {
+				panic(err)
+			}
+			log.Println("AdaFruit service connected")
+			defer cli.Terminate()
+
 			err = cli.Publish(&client.PublishOptions{
 				QoS:       mqtt.QoS0,
 				TopicName: []byte(ada.AdaFruitTopic),
