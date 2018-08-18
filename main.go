@@ -183,6 +183,10 @@ func main() {
 					msg.Text = engine.Digest(config.db, 12) // To do hours and ID
 				case "status":
 					msg.Text = engine.Status(config.db, ID) // Make limit (1..20, all)
+				case "count":
+					count, err := bot.GetChatMembersCount(chatConfig)
+					check(err)
+					adaChanMessage <- strconv.Itoa(count)
 				default:
 					continue
 				}
