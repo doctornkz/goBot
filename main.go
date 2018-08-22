@@ -156,7 +156,7 @@ func main() {
 			lastname := update.Message.From.LastName
 			text := update.Message.Text
 			date := update.Message.Date
-			newuser := update.Message.NewChatMembers
+			newusers := update.Message.NewChatMembers
 			leftuser := update.Message.LeftChatMember
 			log.Printf("Bot poller: ID: %d UserName: %s FirstName: %s LastName: %s", ID, username, firstname, lastname)
 			currentChatID := update.Message.Chat.ID
@@ -179,7 +179,6 @@ func main() {
 					// msg.ParseMode = "Markdown"              // Markdown works only for Digest, may be bug
 					// Markdown removed, generates error:
 					// Bad Request: can't parse entities: Can't find end of the entity starting at byte offset 695
-
 					msg.Text = engine.Digest(config.db, 12) // To do hours and ID
 				case "status":
 					msg.Text = engine.Status(config.db, ID) // Make limit (1..20, all)
@@ -193,6 +192,7 @@ func main() {
 				log.Printf("Bot poller: [%s] (ID: %d) %d %s", username, ID, config.chatID, text)
 				// Check new and left users:  // TODO: Lots the duplicates, replace to function?
 				if leftuser != nil {
+					log.Println("Bot Poller: Users left from Chat")
 					if adaFruitEnable {
 						count, err := bot.GetChatMembersCount(chatConfig)
 						check(err)
@@ -209,23 +209,24 @@ func main() {
 					engine.SetUser(config.db, user)
 					log.Println("Bot Poller: User " + leftuser.FirstName + " go out from Chat")
 
-				} else if newuser != nil {
+				} else if newusers != nil {
+					log.Println("Bot Poller: Users entered in Chat")
 					if adaFruitEnable {
 						count, err := bot.GetChatMembersCount(chatConfig)
 						check(err)
 						adaChanMessage <- strconv.Itoa(count)
 					}
 
-					for _, newuservalue := range *newuser {
-						user := engine.GetUser(config.db, newuservalue.ID)
-						user.UserID = newuservalue.ID
-						user.UserName = newuservalue.UserName
-						user.FirstName = newuservalue.FirstName
-						user.LastName = newuservalue.LastName
+					for _, newuser := range *newusers {
+						user := engine.GetUser(config.db, newuser.ID)
+						user.UserID = newuser.ID
+						user.UserName = newuser.UserName
+						user.FirstName = newuser.FirstName
+						user.LastName = newuser.LastName
 						user.Date = time.Now().Unix() // FIXME Double check time with non-existing user
 						user.NumMessages = 0
 						engine.SetUser(config.db, user)
-						log.Println("Bot Poller: User " + newuservalue.FirstName + " entered in Chat")
+						log.Println("Bot Poller: User " + user.FirstName + "entered in Chat")
 					}
 
 				} else {
